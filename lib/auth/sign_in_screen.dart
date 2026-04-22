@@ -3,14 +3,15 @@ import '../../theme/app_colors.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/app_text_field.dart';
 
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+
 class SignInScreen extends StatefulWidget {
   const SignInScreen({
     super.key,
-    required this.onLogin,
     required this.onSwitchToSignUp,
   });
 
-  final void Function(String username) onLogin;
   final VoidCallback onSwitchToSignUp;
 
   @override
@@ -30,6 +31,8 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -106,9 +109,14 @@ class _SignInScreenState extends State<SignInScreen> {
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: () {
-                            widget.onLogin(usernameController.text.trim());
-                          },
+                          onPressed: auth.isLoading 
+                              ? null 
+                              : () {
+                                  context.read<AuthProvider>().login(
+                                    usernameController.text.trim(),
+                                    passwordController.text.trim(),
+                                  );
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.black,
                             foregroundColor: Colors.white,
@@ -116,13 +124,19 @@ class _SignInScreenState extends State<SignInScreen> {
                               borderRadius: BorderRadius.circular(18),
                             ),
                           ),
-                          child: const Text(
-                            'Đăng nhập',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 18,
-                            ),
-                          ),
+                          child: auth.isLoading
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                )
+                              : const Text(
+                                  'Đăng nhập',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 18,
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 28),
