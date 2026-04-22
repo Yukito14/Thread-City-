@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
 import '../screens/main_screen.dart';
 import 'sign_in_screen.dart';
 import 'sign_up_screen.dart';
@@ -14,29 +12,54 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   bool showSignIn = true;
+  String currentUsername = 'anhthu031020051';
+  String currentNickname = 'anhthu031020051@gmail.com';
+
+  void handleLogin(String username) {
+    setState(() {
+      currentUsername = username.isEmpty ? 'user' : username;
+      currentNickname = username.isEmpty ? 'user' : username;
+    });
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MainScreen(
+          currentUsername: currentUsername,
+          currentNickname: currentNickname,
+        ),
+      ),
+    );
+  }
+
+  void handleSignUp(String username, String nickname) {
+    setState(() {
+      currentUsername = username.isEmpty ? 'user' : username;
+      currentNickname = nickname.isEmpty ? currentUsername : nickname;
+    });
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MainScreen(
+          currentUsername: currentUsername,
+          currentNickname: currentNickname,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-
-    if (auth.isAuthenticated) {
-      return MainScreen(
-        currentUsername: auth.currentUser!.username,
-        currentNickname: auth.currentUser!.nickname,
-      );
-    }
-
     if (showSignIn) {
       return SignInScreen(
+        onLogin: handleLogin,
         onSwitchToSignUp: () => setState(() => showSignIn = false),
       );
     }
 
     return SignUpScreen(
-      onSignUp: (username, nickname) {
-        // Tạm thời giữ hàm cũ cho SignUp nếu bạn chỉ muốn focus Đăng nhập trước
-        // (Nếu muốn có thể đổi sang dùng auth.signUp(..))
-      },
+      onSignUp: handleSignUp,
       onSwitchToSignIn: () => setState(() => showSignIn = true),
     );
   }
