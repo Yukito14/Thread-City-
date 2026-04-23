@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../../models/post_model.dart';
-import '../../core/config/app_config.dart';
+import '../models/post_model.dart';
+import '../config/app_config.dart';
 
 abstract class IPostRepository {
   Future<List<PostModel>> getFeed({String? firebaseUid, String? cursor, bool following = false});
