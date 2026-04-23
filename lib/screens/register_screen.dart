@@ -1,43 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../utils/app_routes.dart';
+import '../route/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _usernameController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _usernameController.dispose();
     super.dispose();
   }
 
-  void _handleLogin() async {
+  void _handleSignUp() async {
     final authProvider = context.read<AuthProvider>();
 
-    final success = await authProvider.signIn(
+    final success = await authProvider.signUp(
       email: _emailController.text.trim(),
       password: _passwordController.text.trim(),
+      username: _usernameController.text.trim(),
     );
 
     if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đăng ký thành công!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
       Navigator.pushReplacementNamed(context, AppRoutes.home);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Đăng nhập thất bại'),
+          content: Text(authProvider.errorMessage ?? 'Có lỗi xảy ra'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -92,14 +101,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 40),
                       Text(
-                        'Chào mừng trở lại',
+                        'Tạo tài khoản mới',
                         style: AppTypography.displaySmall.copyWith(
                           color: AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Đăng nhập vào tài khoản của bạn để tiếp tục',
+                        'Gia nhập cộng đồng Threads ngay hôm nay',
                         style: AppTypography.bodyMedium.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -112,13 +121,25 @@ class _LoginScreenState extends State<LoginScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Username field
+                      TextField(
+                        controller: _usernameController,
+                        enabled: !isLoading,
+                        decoration: InputDecoration(
+                          labelText: 'Tên đăng nhập',
+                          prefixIcon: const Icon(Icons.person_outline),
+                          prefixIconColor: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
                       // Email field
                       TextField(
                         controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
                         enabled: !isLoading,
+                        keyboardType: TextInputType.emailAddress,
                         decoration: InputDecoration(
-                          labelText: 'Email hoặc tên đăng nhập',
+                          labelText: 'Email',
                           prefixIcon: const Icon(Icons.mail_outline),
                           prefixIconColor: AppColors.textSecondary,
                         ),
@@ -148,23 +169,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-
-                      // Forgot password link
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: isLoading ? null : () {},
-                          child: const Text('Quên mật khẩu?'),
-                        ),
-                      ),
                       const SizedBox(height: 24),
 
-                      // Login button
+                      // Sign up button
                       SizedBox(
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: isLoading ? null : _handleLogin,
+                          onPressed: isLoading ? null : _handleSignUp,
                           child: isLoading
                               ? const SizedBox(
                                   height: 24,
@@ -177,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 )
                               : const Text(
-                                  'Đăng nhập',
+                                  'Đăng ký',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -188,14 +199,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
 
-                  // Bottom section - Sign up
+                  // Bottom section - Login
                   Padding(
                     padding: const EdgeInsets.only(bottom: 32),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Chưa có tài khoản? ',
+                          'Đã có tài khoản? ',
                           style: AppTypography.bodyMedium.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -203,9 +214,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextButton(
                           onPressed: isLoading
                               ? null
-                              : () => Navigator.pushNamed(
+                              : () => Navigator.pushReplacementNamed(
                                     context,
-                                    AppRoutes.register,
+                                    AppRoutes.login,
                                   ),
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
@@ -213,7 +224,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
                           child: Text(
-                            'Đăng ký',
+                            'Đăng nhập',
                             style: AppTypography.titleMedium.copyWith(
                               color: AppColors.primaryAccent,
                               fontWeight: FontWeight.w700,
