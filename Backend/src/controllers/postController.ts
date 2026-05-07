@@ -2,7 +2,9 @@ import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { extractHashtags } from "../utils/hashtagUtils.js";
 
+
 const prisma = new PrismaClient();
+
 
 // Lấy danh sách bài viết (Feed)
 export const getFeed = async (req: Request, res: Response) => {
