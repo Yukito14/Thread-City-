@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/app_text_field.dart';
+import '../../services/auth_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({
@@ -24,6 +25,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
+  bool isLoading = false;
+
   @override
   void dispose() {
     usernameController.dispose();
@@ -32,6 +35,84 @@ class _SignUpScreenState extends State<SignUpScreen> {
     passwordController.dispose();
     confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> handleSignUp() async {
+    final username = usernameController.text.trim();
+    final nickname = nicknameController.text.trim();
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+    final confirmPassword = confirmPasswordController.text.trim();
+
+    if (username.isEmpty ||
+        nickname.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng nhập đầy đủ thông tin'),
+        ),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mật khẩu không khớp'),
+        ),
+      );
+      return;
+    }
+
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mật khẩu phải có ít nhất 6 ký tự'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      await AuthService.register(
+        username: username,
+        nickname: nickname,
+        email: email,
+        password: password,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đăng ký thành công, hãy đăng nhập'),
+        ),
+      );
+
+      widget.onSwitchToSignIn();
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -68,58 +149,54 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                       ),
                       const SizedBox(height: 28),
+
                       const _FieldLabel('Tên người dùng'),
                       AppTextField(
                         controller: usernameController,
                         hintText: 'username',
                       ),
+
                       const SizedBox(height: 18),
+
                       const _FieldLabel('Biệt danh'),
                       AppTextField(
                         controller: nicknameController,
                         hintText: 'Tên hiển thị của bạn',
                       ),
+
                       const SizedBox(height: 18),
+
                       const _FieldLabel('Email'),
                       AppTextField(
                         controller: emailController,
                         hintText: 'email@example.com',
                       ),
+
                       const SizedBox(height: 18),
+
                       const _FieldLabel('Mật khẩu'),
                       AppTextField(
                         controller: passwordController,
                         hintText: '••••••••',
                         obscureText: true,
                       ),
+
                       const SizedBox(height: 18),
+
                       const _FieldLabel('Xác nhận mật khẩu'),
                       AppTextField(
                         controller: confirmPasswordController,
                         hintText: '••••••••',
                         obscureText: true,
                       ),
+
                       const SizedBox(height: 22),
+
                       SizedBox(
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: () {
-                            if (passwordController.text !=
-                                confirmPasswordController.text) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Mật khẩu không khớp'),
-                                ),
-                              );
-                              return;
-                            }
-
-                            widget.onSignUp(
-                              usernameController.text.trim(),
-                              nicknameController.text.trim(),
-                            );
-                          },
+                          onPressed: isLoading ? null : handleSignUp,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.black,
                             foregroundColor: Colors.white,
@@ -127,16 +204,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               borderRadius: BorderRadius.circular(18),
                             ),
                           ),
-                          child: const Text(
-                            'Tạo tài khoản',
-                            style: TextStyle(
+                          child: Text(
+                            isLoading ? 'Đang tạo tài khoản...' : 'Tạo tài khoản',
+                            style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 18,
                             ),
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 28),
+
                       Center(
                         child: GestureDetector(
                           onTap: widget.onSwitchToSignIn,

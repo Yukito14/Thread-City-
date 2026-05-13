@@ -47,7 +47,7 @@ class ProfileScreen extends StatelessWidget {
                       side: const BorderSide(color: AppColors.border),
                     ),
                     child: const Text(
-                      'Đăng xuất',
+                      'Cài đặt',
                       style: TextStyle(
                         color: Colors.black,
                         fontWeight: FontWeight.w700,

@@ -3,6 +3,7 @@ import '../../theme/app_colors.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/app_text_field.dart';
 import '../screens/main_screen.dart';
+import '../../services/auth_service.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({
@@ -22,11 +23,67 @@ class _SignInScreenState extends State<SignInScreen> {
   final usernameController = TextEditingController();
   final passwordController = TextEditingController();
 
+  bool isLoading = false;
+
   @override
   void dispose() {
     usernameController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> handleLogin() async {
+    final usernameOrEmail = usernameController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (usernameOrEmail.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng nhập đầy đủ thông tin'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final data = await AuthService.login(
+        usernameOrEmail: usernameOrEmail,
+        password: password,
+      );
+
+      if (!mounted) return;
+
+      final user = data['user'];
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => MainScreen(
+            currentUsername: user['username'] ?? '',
+            currentNickname: user['nickname'] ?? user['username'] ?? '',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -63,6 +120,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                       ),
                       const SizedBox(height: 28),
+
                       const Text(
                         'Tên người dùng hoặc email',
                         style: TextStyle(
@@ -76,7 +134,9 @@ class _SignInScreenState extends State<SignInScreen> {
                         controller: usernameController,
                         hintText: 'username hoặc email@example.com',
                       ),
+
                       const SizedBox(height: 18),
+
                       const Text(
                         'Mật khẩu',
                         style: TextStyle(
@@ -91,7 +151,9 @@ class _SignInScreenState extends State<SignInScreen> {
                         hintText: '••••••••',
                         obscureText: true,
                       ),
+
                       const SizedBox(height: 12),
+
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
@@ -102,22 +164,14 @@ class _SignInScreenState extends State<SignInScreen> {
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 6),
+
                       SizedBox(
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: () {
-                            // Simulate login and navigate to main screen
-                            Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(
-                                builder: (context) => const MainScreen(
-                                  currentUsername: 'testuser',
-                                  currentNickname: 'Test User',
-                                ),
-                              ),
-                            );
-                          },
+                          onPressed: isLoading ? null : handleLogin,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.black,
                             foregroundColor: Colors.white,
@@ -125,16 +179,18 @@ class _SignInScreenState extends State<SignInScreen> {
                               borderRadius: BorderRadius.circular(18),
                             ),
                           ),
-                          child: const Text(
-                            'Đăng nhập',
-                            style: TextStyle(
+                          child: Text(
+                            isLoading ? 'Đang đăng nhập...' : 'Đăng nhập',
+                            style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 18,
                             ),
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 28),
+
                       Center(
                         child: GestureDetector(
                           onTap: widget.onSwitchToSignUp,
