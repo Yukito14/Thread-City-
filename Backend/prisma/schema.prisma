@@ -11,6 +11,7 @@ model User {
   id             Int            @id @default(autoincrement())
   username       String         @unique
   email          String         @unique
+  nickname       String?
   password_hash  String?
   bio            String?        @db.Text
   avatar_url     String?
