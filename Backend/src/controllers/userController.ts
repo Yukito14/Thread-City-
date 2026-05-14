@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+
 // Lấy thông tin Profile của User
 export const getUserProfile = async (req: Request, res: Response) => {
     const firebase_uid = req.params.firebase_uid as string;
