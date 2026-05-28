@@ -35,7 +35,7 @@ export const getFeed = async (req: Request, res: Response) => {
         }
 
         const posts = await prisma.post.findMany({
-            where: { 
+            where: {
                 parent_id: null,
                 user_id: following ? { in: followedUserIds } : undefined
             },
@@ -270,7 +270,7 @@ export const getReplies = async (req: Request, res: Response) => {
         });
 
         const formattedReplies = replies.map((reply: any) => {
-            const formattedNested = reply.replies && reply.replies.length > 0 
+            const formattedNested = reply.replies && reply.replies.length > 0
                 ? reply.replies.map((nested: any) => ({
                     ...nested,
                     isLiked: nested.likes ? nested.likes.length > 0 : false,

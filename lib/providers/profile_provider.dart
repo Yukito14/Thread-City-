@@ -41,7 +41,7 @@ class ProfileProvider extends ChangeNotifier {
       // Gọi song song hoặc tuần tự để lấy thông tin Profile và Bài viết riêng biệt
       final userResult = await _userRepository.getUserProfile(firebaseUid);
       final postsResult = await _postRepository.getPostsByUserUid(firebaseUid, viewerUid: viewerUid);
-      
+
       _userData = userResult;
       _userPosts = postsResult;
     } catch (e) {
@@ -69,7 +69,7 @@ class ProfileProvider extends ChangeNotifier {
         avatarUrl: avatarUrl,
         nickname: nickname,
       );
-      
+
       // Sau khi update thành công, tải lại profile để cập nhật UI
       await fetchProfile(firebaseUid, viewerUid: firebaseUid);
       return true;
@@ -104,15 +104,15 @@ class ProfileProvider extends ChangeNotifier {
           .child('$firebaseUid.jpg');
 
       final uploadTask = storageRef.putFile(File(image.path));
-      
+
       // Chờ quá trình upload hoàn tất
       final snapshot = await uploadTask.whenComplete(() => null);
-      
+
       // Kiểm tra xem Firebase Storage có chặn upload không (do luật bảo mật)
       if (snapshot.state == TaskState.error) {
         throw Exception('Firebase Storage từ chối lưu file. Hãy kiểm tra lại Rules.');
       }
-      
+
       final downloadUrl = await snapshot.ref.getDownloadURL();
 
       // 2. Cập nhật vào MySQL (thông qua updateProfile)

@@ -51,10 +51,10 @@ class _MainScreenState extends State<MainScreen>
     }
     if (index == _currentIndex) return;
     HapticFeedback.selectionClick();
-    
+
     // 🚨 Tạm dừng TẤT CẢ video khi người dùng chuyển sang tab khác!
     VideoPlayerWidget.pauseAll();
-    
+
     setState(() {
       _prevIndex = _currentIndex;
       _currentIndex = index;
@@ -93,7 +93,7 @@ class _MainScreenState extends State<MainScreen>
 
   PreferredSizeWidget _buildAppBar(BuildContext context, String username) {
     switch (_currentIndex) {
-      // ── Home: logo center + DM icon right (like real Threads)
+    // ── Home: logo center + DM icon right (like real Threads)
       case 0:
         return AppBar(
           backgroundColor: AppColors.surface,
@@ -120,7 +120,7 @@ class _MainScreenState extends State<MainScreen>
           bottom: _appBarDivider(),
         );
 
-      // ── Search: plain bar
+    // ── Search: plain bar
       case 1:
         return AppBar(
           backgroundColor: AppColors.surface,
@@ -131,7 +131,7 @@ class _MainScreenState extends State<MainScreen>
           bottom: _appBarDivider(),
         );
 
-      // ── Write: title left
+    // ── Write: title left
       case 2:
         return AppBar(
           backgroundColor: AppColors.surface,
@@ -151,7 +151,7 @@ class _MainScreenState extends State<MainScreen>
           bottom: _appBarDivider(),
         );
 
-      // ── Activity: title left
+    // ── Activity: title left
       case 3:
         return AppBar(
           backgroundColor: AppColors.surface,
@@ -171,7 +171,7 @@ class _MainScreenState extends State<MainScreen>
           bottom: _appBarDivider(),
         );
 
-      // ── Profile: username left + logout right
+    // ── Profile: username left + logout right
       case 4:
       default:
         return AppBar(
@@ -208,11 +208,11 @@ class _MainScreenState extends State<MainScreen>
       builder: (_) => _ProfileMenuSheet(
         onLogout: () async {
           Navigator.pop(context);
-          
+
           // 🧹 Dọn dẹp session của các Provider để không bị lưu data cũ
           context.read<UserProvider>().clearData();
           context.read<HomeProvider>().clearData();
-          
+
           await context.read<AuthProvider>().signOut();
         },
       ),

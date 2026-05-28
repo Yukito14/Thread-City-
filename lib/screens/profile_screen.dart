@@ -103,13 +103,13 @@ class _ProfileScreenState extends State<ProfileScreen>
         nameController: nameCtrl,
         onSave: () async {
           final uid =
-              context.read<AuthProvider>().currentUserData?['firebase_uid'];
+          context.read<AuthProvider>().currentUserData?['firebase_uid'];
           if (uid != null) {
             final ok = await context.read<UserProvider>().updateProfile(
-                  firebaseUid: uid,
-                  nickname: nameCtrl.text,
-                  bio: bioCtrl.text,
-                );
+              firebaseUid: uid,
+              nickname: nameCtrl.text,
+              bio: bioCtrl.text,
+            );
             if (ok && context.mounted) {
               Navigator.pop(context);
               _fetchProfile();
@@ -123,13 +123,13 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   Widget build(BuildContext context) {
     final stats = _localUserData?['stats'] ?? {};
-    
+
     final loggedInUser = context.watch<AuthProvider>().currentUserData;
     final loggedInUid = loggedInUser?['firebase_uid'];
     final loggedInId = loggedInUser?['id']?.toString();
-    final isMe = widget.viewingUserId == null || 
-                 widget.viewingUserId == loggedInUid || 
-                 widget.viewingUserId == loggedInId;
+    final isMe = widget.viewingUserId == null ||
+        widget.viewingUserId == loggedInUid ||
+        widget.viewingUserId == loggedInId;
 
     if (widget.viewingUserId == null && loggedInUid != null && _localUserData == null && !_localIsLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -141,18 +141,18 @@ class _ProfileScreenState extends State<ProfileScreen>
       backgroundColor: AppColors.surface,
       appBar: Navigator.canPop(context)
           ? AppBar(
-              backgroundColor: AppColors.surface,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              leading: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: AppColors.textPrimary,
-                  size: 20,
-                ),
-                onPressed: () => Navigator.pop(context),
-              ),
-            )
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.textPrimary,
+            size: 20,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+      )
           : null,
       body: SafeArea(
         child: RefreshIndicator(
@@ -593,30 +593,30 @@ class _ProfileAvatar extends StatelessWidget {
           child: ClipOval(
             child: isLoading
                 ? const Center(
-                    child: SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  )
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            )
                 : (url != null && url!.isNotEmpty)
-                    ? Image.network(
-                        url!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.person_rounded,
-                          color: AppColors.textSecondary,
-                          size: 40,
-                        ),
-                      )
-                    : const Icon(
-                        Icons.person_rounded,
-                        color: AppColors.textSecondary,
-                        size: 40,
-                      ),
+                ? Image.network(
+              url!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.person_rounded,
+                color: AppColors.textSecondary,
+                size: 40,
+              ),
+            )
+                : const Icon(
+              Icons.person_rounded,
+              color: AppColors.textSecondary,
+              size: 40,
+            ),
           ),
         ),
         if (isMe && !isLoading)
@@ -960,7 +960,7 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
 
   void _loadData() async {
     final userProvider = context.read<UserProvider>();
-    
+
     // Fetch followers
     userProvider.getUserFollowers(widget.userId).then((list) {
       if (mounted) {
@@ -990,12 +990,12 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
 
   void _navigateToUserProfile(Map<String, dynamic> userMap) {
     Navigator.pop(context); // Close bottom sheet
-    
+
     final loggedInUser = context.read<AuthProvider>().currentUserData;
     final loggedInUid = loggedInUser?['firebase_uid'];
-    
-    final isMe = userMap['username'] == loggedInUser?['username'] || 
-                 userMap['id']?.toString() == loggedInUser?['id']?.toString();
+
+    final isMe = userMap['username'] == loggedInUser?['username'] ||
+        userMap['id']?.toString() == loggedInUser?['id']?.toString();
 
     Navigator.push(
       context,
@@ -1032,7 +1032,7 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
             ),
           ),
           const SizedBox(height: 8),
-          
+
           // TabBar
           TabBar(
             controller: _tabController,
@@ -1120,10 +1120,10 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
             child: ClipOval(
               child: (avatarUrl != null && avatarUrl.isNotEmpty)
                   ? Image.network(
-                      avatarUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildFallback(username),
-                    )
+                avatarUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildFallback(username),
+              )
                   : _buildFallback(username),
             ),
           ),

@@ -142,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             onPressed: () {
                               setState(
-                                  () => _obscurePassword = !_obscurePassword);
+                                      () => _obscurePassword = !_obscurePassword);
                             },
                             color: AppColors.textSecondary,
                           ),
@@ -167,22 +167,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: isLoading ? null : _handleLogin,
                           child: isLoading
                               ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                  ),
-                                )
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
                               : const Text(
-                                  'Đăng nhập',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                            'Đăng nhập',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -204,9 +204,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: isLoading
                               ? null
                               : () => Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.register,
-                                  ),
+                            context,
+                            AppRoutes.register,
+                          ),
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
                             minimumSize: const Size(0, 0),

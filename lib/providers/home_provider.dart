@@ -16,7 +16,7 @@ class HomeProvider extends ChangeNotifier {
   String? _followingErrorMessage;
 
   HomeProvider(this._postRepository, this._authProvider) {
-    fetchFeed(); 
+    fetchFeed();
     fetchFollowingFeed();
   }
 

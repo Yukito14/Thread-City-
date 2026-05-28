@@ -163,7 +163,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                             onPressed: () {
                               setState(
-                                  () => _obscurePassword = !_obscurePassword);
+                                      () => _obscurePassword = !_obscurePassword);
                             },
                             color: AppColors.textSecondary,
                           ),
@@ -178,22 +178,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           onPressed: isLoading ? null : _handleSignUp,
                           child: isLoading
                               ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                  ),
-                                )
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
                               : const Text(
-                                  'Đăng ký',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                            'Đăng ký',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -215,9 +215,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           onPressed: isLoading
                               ? null
                               : () => Navigator.pushReplacementNamed(
-                                    context,
-                                    AppRoutes.login,
-                                  ),
+                            context,
+                            AppRoutes.login,
+                          ),
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
                             minimumSize: const Size(0, 0),

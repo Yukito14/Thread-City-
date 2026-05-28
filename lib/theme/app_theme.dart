@@ -50,7 +50,7 @@ class AppTheme {
           foregroundColor: Colors.white,
           textStyle: AppTypography.titleMedium.copyWith(color: Colors.white),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           elevation: 0,
         ),
@@ -67,11 +67,11 @@ class AppTheme {
         filled: true,
         fillColor: AppColors.inputFill,
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         hintStyle:
-            AppTypography.bodyMedium.copyWith(color: AppColors.textTertiary),
+        AppTypography.bodyMedium.copyWith(color: AppColors.textTertiary),
         labelStyle:
-            AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+        AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.inputBorder),
@@ -79,7 +79,7 @@ class AppTheme {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide:
-              const BorderSide(color: AppColors.primaryAccent, width: 1.5),
+          const BorderSide(color: AppColors.primaryAccent, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -112,35 +112,35 @@ class AppTheme {
       // Text Themes
       textTheme: TextTheme(
         displayLarge:
-            AppTypography.displayLarge.copyWith(color: AppColors.textPrimary),
+        AppTypography.displayLarge.copyWith(color: AppColors.textPrimary),
         displayMedium:
-            AppTypography.displayMedium.copyWith(color: AppColors.textPrimary),
+        AppTypography.displayMedium.copyWith(color: AppColors.textPrimary),
         displaySmall:
-            AppTypography.displaySmall.copyWith(color: AppColors.textPrimary),
+        AppTypography.displaySmall.copyWith(color: AppColors.textPrimary),
         headlineLarge:
-            AppTypography.headlineLarge.copyWith(color: AppColors.textPrimary),
+        AppTypography.headlineLarge.copyWith(color: AppColors.textPrimary),
         headlineMedium:
-            AppTypography.headlineMedium.copyWith(color: AppColors.textPrimary),
+        AppTypography.headlineMedium.copyWith(color: AppColors.textPrimary),
         headlineSmall:
-            AppTypography.headlineSmall.copyWith(color: AppColors.textPrimary),
+        AppTypography.headlineSmall.copyWith(color: AppColors.textPrimary),
         titleLarge:
-            AppTypography.titleLarge.copyWith(color: AppColors.textPrimary),
+        AppTypography.titleLarge.copyWith(color: AppColors.textPrimary),
         titleMedium:
-            AppTypography.titleMedium.copyWith(color: AppColors.textPrimary),
+        AppTypography.titleMedium.copyWith(color: AppColors.textPrimary),
         titleSmall:
-            AppTypography.titleSmall.copyWith(color: AppColors.textPrimary),
+        AppTypography.titleSmall.copyWith(color: AppColors.textPrimary),
         bodyLarge:
-            AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+        AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
         bodyMedium:
-            AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary),
+        AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary),
         bodySmall:
-            AppTypography.bodySmall.copyWith(color: AppColors.textPrimary),
+        AppTypography.bodySmall.copyWith(color: AppColors.textPrimary),
         labelLarge:
-            AppTypography.labelLarge.copyWith(color: AppColors.textPrimary),
+        AppTypography.labelLarge.copyWith(color: AppColors.textPrimary),
         labelMedium:
-            AppTypography.labelMedium.copyWith(color: AppColors.textSecondary),
+        AppTypography.labelMedium.copyWith(color: AppColors.textSecondary),
         labelSmall:
-            AppTypography.labelSmall.copyWith(color: AppColors.textTertiary),
+        AppTypography.labelSmall.copyWith(color: AppColors.textTertiary),
       ),
       // Icon Themes
       iconTheme: const IconThemeData(

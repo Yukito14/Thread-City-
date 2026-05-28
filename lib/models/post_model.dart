@@ -11,7 +11,7 @@ class PostModel {
   final String content;
   final PostType type;
   final DateTime createdAt;
-  
+
   // Thông tin mở rộng
   final UserModel? author;
   final int likeCount;
@@ -19,7 +19,7 @@ class PostModel {
   final int repostCount;
   final bool isLiked; // Thêm trường này
   final bool isFollowing; // Trạng thái follow của người xem đối với author của bài viết này
-  
+
   final List<PostMediaModel> media;
   final List<HashtagModel> hashtags;
   final List<PostModel> replies; // nested replies
@@ -44,7 +44,7 @@ class PostModel {
 
   factory PostModel.fromMap(Map<String, dynamic> map) {
     final counts = map['counts'] ?? {};
-    
+
     List<PostMediaModel> parsedMedia = [];
     if (map['media'] != null && map['media'] is List) {
       parsedMedia = (map['media'] as List).map((m) => PostMediaModel.fromMap(m)).toList();
@@ -59,14 +59,14 @@ class PostModel {
     if (map['replies'] != null && map['replies'] is List) {
       parsedReplies = (map['replies'] as List).map((r) => PostModel.fromMap(r)).toList();
     }
-    
+
     return PostModel(
       id: map['id'],
       userId: map['user_id'],
       parentId: map['parent_id'],
       content: map['content'] ?? '',
       type: PostType.values.firstWhere(
-        (e) => e.name == (map['type'] ?? 'post'),
+            (e) => e.name == (map['type'] ?? 'post'),
         orElse: () => PostType.post,
       ),
       createdAt: DateTime.parse(map['created_at']),
