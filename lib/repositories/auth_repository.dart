@@ -17,7 +17,7 @@ class AuthRepository {
     required String password,
   }) async {
     print('[AUTH] 🚀 Bắt đầu đăng ký bằng Firebase SDK...');
-    
+
     /* --- BACKUP REST API (Dùng nếu SDK bị lỗi) ---
     final url = Uri.parse('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=$_firebaseApiKey');
     final response = await http.post(
@@ -42,7 +42,7 @@ class AuthRepository {
         email: email,
         password: password,
       );
-      
+
       return {
         'localId': userCredential.user?.uid,
         'email': userCredential.user?.email,
@@ -51,7 +51,7 @@ class AuthRepository {
       String errorCode = e.code.toUpperCase().replaceAll('-', '_');
       // Mapping để tương thích với Provider đang dùng REST API codes
       if (errorCode == 'EMAIL_ALREADY_IN_USE') errorCode = 'EMAIL_EXISTS';
-      
+
       print('[AUTH][SDK_ERROR] $errorCode: ${e.message}');
       throw Exception(errorCode);
     } catch (e) {
@@ -91,7 +91,7 @@ class AuthRepository {
         email: email,
         password: password,
       );
-      
+
       return {
         'localId': userCredential.user?.uid,
         'email': userCredential.user?.email,
@@ -141,7 +141,7 @@ class AuthRepository {
         Uri.parse('$authUrl/by-uid/$uid'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10)); // Thêm timeout
-      
+
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }

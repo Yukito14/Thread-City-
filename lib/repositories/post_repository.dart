@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/post_model.dart';
+import '../../models/post_model.dart';
 import '../config/app_config.dart';
 
 abstract class IPostRepository {
   Future<List<PostModel>> getFeed({String? firebaseUid, String? cursor, bool following = false});
   Future<void> createPost({
-    required String firebaseUid, 
-    required String content, 
-    int? parentId, 
+    required String firebaseUid,
+    required String content,
+    int? parentId,
     String? type,
     List<Map<String, String>>? media,
   });
@@ -23,10 +23,10 @@ class PostRepository implements IPostRepository {
   @override
   Future<List<PostModel>> getReplies(int postId, {String? firebaseUid}) async {
     try {
-      final url = firebaseUid != null 
+      final url = firebaseUid != null
           ? '$baseUrl/posts/$postId/replies?firebase_uid=$firebaseUid'
           : '$baseUrl/posts/$postId/replies';
-          
+
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -63,9 +63,9 @@ class PostRepository implements IPostRepository {
 
   @override
   Future<void> createPost({
-    required String firebaseUid, 
-    required String content, 
-    int? parentId, 
+    required String firebaseUid,
+    required String content,
+    int? parentId,
     String? type,
     List<Map<String, String>>? media,
   }) async {
@@ -76,7 +76,7 @@ class PostRepository implements IPostRepository {
         'parent_id': parentId,
         'type': type ?? 'post',
       };
-      
+
       if (media != null && media.isNotEmpty) {
         bodyData['media'] = media;
       }
@@ -104,11 +104,11 @@ class PostRepository implements IPostRepository {
       if (firebaseUid != null) params.add('firebase_uid=$firebaseUid');
       if (following) params.add('following=true');
       if (cursor != null) params.add('cursor=$cursor');
-      
+
       if (params.isNotEmpty) {
         url += '?${params.join('&')}';
       }
-          
+
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
@@ -125,10 +125,10 @@ class PostRepository implements IPostRepository {
   @override
   Future<List<PostModel>> getPostsByUserUid(String firebaseUid, {String? viewerUid}) async {
     try {
-      final url = viewerUid != null 
+      final url = viewerUid != null
           ? '$baseUrl/posts/user/$firebaseUid?viewer_uid=$viewerUid'
           : '$baseUrl/posts/user/$firebaseUid';
-          
+
       final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);

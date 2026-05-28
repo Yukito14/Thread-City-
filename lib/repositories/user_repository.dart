@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../../core/config/app_config.dart';
+import '../config/app_config.dart';
 
 abstract class IUserRepository {
   Future<Map<String, dynamic>> getUserProfile(String firebaseUid, {String? viewerUid});
