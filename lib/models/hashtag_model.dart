@@ -1,32 +1,18 @@
-enum MediaType { image, video }
-
-class PostMediaModel {
+class HashtagModel {
   final int id;
-  final int postId;
-  final String mediaUrl;
-  final MediaType mediaType;
-  final int orderIndex;
+  final String tagName;
   final DateTime createdAt;
 
-  PostMediaModel({
+  HashtagModel({
     required this.id,
-    required this.postId,
-    required this.mediaUrl,
-    required this.mediaType,
-    required this.orderIndex,
+    required this.tagName,
     required this.createdAt,
   });
 
-  factory PostMediaModel.fromMap(Map<String, dynamic> map) {
-    return PostMediaModel(
+  factory HashtagModel.fromMap(Map<String, dynamic> map) {
+    return HashtagModel(
       id: map['id'],
-      postId: map['post_id'],
-      mediaUrl: map['media_url'],
-      mediaType: MediaType.values.firstWhere(
-            (e) => e.name == (map['media_type'] ?? 'image'),
-        orElse: () => MediaType.image,
-      ),
-      orderIndex: map['order_index'] ?? 0,
+      tagName: map['tag_name'],
       createdAt: DateTime.parse(map['created_at']),
     );
   }

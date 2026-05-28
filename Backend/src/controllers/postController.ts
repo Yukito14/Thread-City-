@@ -2,9 +2,7 @@ import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { extractHashtags } from "../utils/hashtagUtils.js";
 
-
 const prisma = new PrismaClient();
-
 
 // Lấy danh sách bài viết (Feed)
 export const getFeed = async (req: Request, res: Response) => {
@@ -37,7 +35,7 @@ export const getFeed = async (req: Request, res: Response) => {
         }
 
         const posts = await prisma.post.findMany({
-            where: { 
+            where: {
                 parent_id: null,
                 user_id: following ? { in: followedUserIds } : undefined
             },
@@ -69,6 +67,8 @@ export const getFeed = async (req: Request, res: Response) => {
 };
 
 // Tạo bài viết mới hoặc Bình luận (Reply)
+// Tạo bài viết mới hoặc Bình luận (Reply)
+// Tạo bài viết mới hoặc Bình luận (Reply)
 export const createPost = async (req: Request, res: Response) => {
     const { firebase_uid, content, parent_id, type, media } = req.body;
 
@@ -77,15 +77,22 @@ export const createPost = async (req: Request, res: Response) => {
     }
 
     try {
-        const user = await prisma.user.findUnique({ where: { firebase_uid: firebase_uid as string } });
-        if (!user) return res.status(404).json({ message: 'User not found' });
+        const user = await prisma.user.findUnique({
+            where: { firebase_uid: firebase_uid as string }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
         const newPost = await prisma.$transaction(async (tx) => {
+            const parsedParentId = parent_id ? parseInt(parent_id.toString(), 10) : null;
+
             const post = await tx.post.create({
                 data: {
                     user_id: user.id,
                     content: content,
-                    parent_id: parent_id ? parseInt(parent_id.toString()) : null,
+                    parent_id: parsedParentId,
                     type: type || 'post',
                     counts: {
                         create: {}
@@ -93,12 +100,18 @@ export const createPost = async (req: Request, res: Response) => {
                 },
                 include: {
                     user: {
-                        select: { id: true, username: true, avatar_url: true }
+                        select: {
+                            id: true,
+                            username: true,
+                            avatar_url: true
+                        }
                     },
                     counts: true,
                     media: true,
                     hashtags: {
-                        include: { hashtag: true }
+                        include: {
+                            hashtag: true
+                        }
                     }
                 }
             });
@@ -111,20 +124,26 @@ export const createPost = async (req: Request, res: Response) => {
                     media_type: m.type || 'image',
                     order_index: index,
                 }));
-                await tx.postMedia.createMany({ data: mediaData });
+
+                await tx.postMedia.createMany({
+                    data: mediaData
+                });
             }
 
             // 2. Phân tích và lưu Hashtag
             const tags = extractHashtags(content);
+
             for (const tag of tags) {
-                // Upsert hashtag (tạo nếu chưa có)
                 const hashtagRecord = await tx.hashtag.upsert({
-                    where: { tag_name: tag },
+                    where: {
+                        tag_name: tag
+                    },
                     update: {},
-                    create: { tag_name: tag },
+                    create: {
+                        tag_name: tag
+                    },
                 });
 
-                // Nối hashtag với post
                 await tx.postHashtag.create({
                     data: {
                         post_id: post.id,
@@ -133,22 +152,65 @@ export const createPost = async (req: Request, res: Response) => {
                 });
             }
 
-            // 3. Tăng comment count của bài cha (nếu là reply)
-            if (parent_id) {
-                await tx.postCount.update({
-                    where: { post_id: parseInt(parent_id.toString()) },
-                    data: { comment_count: { increment: 1 } }
+            // 3. Nếu là reply/comment thì tăng comment_count + tạo notification
+            if (parsedParentId) {
+                const parentPost = await tx.post.findUnique({
+                    where: {
+                        id: parsedParentId
+                    },
+                    select: {
+                        id: true,
+                        user_id: true
+                    }
                 });
+
+                if (parentPost) {
+                    await tx.postCount.update({
+                        where: {
+                            post_id: parsedParentId
+                        },
+                        data: {
+                            comment_count: {
+                                increment: 1
+                            }
+                        }
+                    });
+
+                    // Không tự gửi thông báo cho chính mình
+                    if (parentPost.user_id !== user.id) {
+                        await tx.notification.create({
+                            data: {
+                                user_id: parentPost.user_id,
+                                actor_id: user.id,
+                                post_id: post.id,
+                                type: 'reply',
+                                is_read: false
+                            }
+                        });
+                    }
+                }
             }
 
             // Lấy lại post đã có media và hashtags
             return await tx.post.findUnique({
-                where: { id: post.id },
+                where: {
+                    id: post.id
+                },
                 include: {
-                    user: { select: { id: true, username: true, avatar_url: true } },
+                    user: {
+                        select: {
+                            id: true,
+                            username: true,
+                            avatar_url: true
+                        }
+                    },
                     counts: true,
                     media: true,
-                    hashtags: { include: { hashtag: true } }
+                    hashtags: {
+                        include: {
+                            hashtag: true
+                        }
+                    }
                 }
             });
         });
@@ -208,7 +270,7 @@ export const getReplies = async (req: Request, res: Response) => {
         });
 
         const formattedReplies = replies.map((reply: any) => {
-            const formattedNested = reply.replies && reply.replies.length > 0 
+            const formattedNested = reply.replies && reply.replies.length > 0
                 ? reply.replies.map((nested: any) => ({
                     ...nested,
                     isLiked: nested.likes ? nested.likes.length > 0 : false,
@@ -231,6 +293,7 @@ export const getReplies = async (req: Request, res: Response) => {
 };
 
 // Thả tim / Bỏ thả tim bài viết (Toggle Like)
+// Thả tim / Bỏ thả tim bài viết (Toggle Like)
 export const toggleLike = async (req: Request, res: Response) => {
     const id = req.params.id as string;
     const firebase_uid = req.body.firebase_uid as string;
@@ -240,43 +303,124 @@ export const toggleLike = async (req: Request, res: Response) => {
     }
 
     try {
-        const user = await prisma.user.findUnique({ where: { firebase_uid } });
-        if (!user) return res.status(404).json({ message: 'User not found' });
+        const user = await prisma.user.findUnique({
+            where: {
+                firebase_uid
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
         const postId = parseInt(id, 10);
+
         if (isNaN(postId)) {
             return res.status(400).json({ message: 'Invalid post ID' });
         }
 
         const result = await prisma.$transaction(async (tx) => {
+            const post = await tx.post.findUnique({
+                where: {
+                    id: postId
+                },
+                select: {
+                    id: true,
+                    user_id: true
+                }
+            });
+
+            if (!post) {
+                throw new Error('Post not found');
+            }
+
             const existingLike = await tx.like.findUnique({
-                where: { user_id_post_id: { user_id: user.id, post_id: postId } }
+                where: {
+                    user_id_post_id: {
+                        user_id: user.id,
+                        post_id: postId
+                    }
+                }
             });
 
             if (existingLike) {
                 await tx.like.delete({
-                    where: { id: existingLike.id }
+                    where: {
+                        id: existingLike.id
+                    }
                 });
+
                 await tx.postCount.update({
-                    where: { post_id: postId },
-                    data: { like_count: { decrement: 1 } }
+                    where: {
+                        post_id: postId
+                    },
+                    data: {
+                        like_count: {
+                            decrement: 1
+                        }
+                    }
                 });
-                return { liked: false };
-            } else {
-                await tx.like.create({
-                    data: { user_id: user.id, post_id: postId }
-                });
-                await tx.postCount.update({
-                    where: { post_id: postId },
-                    data: { like_count: { increment: 1 } }
-                });
-                return { liked: true };
+
+                return {
+                    liked: false
+                };
             }
+
+            await tx.like.create({
+                data: {
+                    user_id: user.id,
+                    post_id: postId
+                }
+            });
+
+            await tx.postCount.update({
+                where: {
+                    post_id: postId
+                },
+                data: {
+                    like_count: {
+                        increment: 1
+                    }
+                }
+            });
+
+            // Tạo thông báo like nếu người like không phải chủ bài viết
+            if (post.user_id !== user.id) {
+                const existingNotification = await tx.notification.findFirst({
+                    where: {
+                        user_id: post.user_id,
+                        actor_id: user.id,
+                        post_id: postId,
+                        type: 'like'
+                    }
+                });
+
+                if (!existingNotification) {
+                    await tx.notification.create({
+                        data: {
+                            user_id: post.user_id,
+                            actor_id: user.id,
+                            post_id: postId,
+                            type: 'like',
+                            is_read: false
+                        }
+                    });
+                }
+            }
+
+            return {
+                liked: true
+            };
         });
 
         return res.json(result);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Lỗi toggleLike:', error);
+
+        if (error.message === 'Post not found') {
+            return res.status(404).json({ message: 'Post not found' });
+        }
+
         return res.status(500).json({ message: "Internal server error" });
     }
 };
