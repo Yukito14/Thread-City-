@@ -468,3 +468,122 @@ export const getPostsByUserUid = async (req: Request, res: Response) => {
     }
 };
 
+// Lấy chi tiết một bài viết theo ID
+export const getPostById = async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    const firebase_uid = req.query.firebase_uid as string | undefined;
+
+    try {
+        const postId = parseInt(id, 10);
+
+        if (isNaN(postId)) {
+            return res.status(400).json({ message: "Invalid post ID" });
+        }
+
+        let followedUserIds: number[] = [];
+
+        if (firebase_uid) {
+            const viewer = await prisma.user.findUnique({
+                where: { firebase_uid },
+                select: { id: true }
+            });
+
+            if (viewer) {
+                const follows = await prisma.follow.findMany({
+                    where: { follower_id: viewer.id },
+                    select: { following_id: true }
+                });
+
+                followedUserIds = follows.map(f => f.following_id);
+            }
+        }
+
+        const post = await prisma.post.findUnique({
+            where: { id: postId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        nickname: true,
+                        avatar_url: true
+                    }
+                },
+                counts: true,
+                media: true,
+                hashtags: {
+                    include: {
+                        hashtag: true
+                    }
+                },
+                likes: firebase_uid
+                    ? {
+                        where: {
+                            user: {
+                                firebase_uid
+                            }
+                        }
+                    }
+                    : undefined,
+                replies: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true,
+                                nickname: true,
+                                avatar_url: true
+                            }
+                        },
+                        counts: true,
+                        media: true,
+                        hashtags: {
+                            include: {
+                                hashtag: true
+                            }
+                        },
+                        likes: firebase_uid
+                            ? {
+                                where: {
+                                    user: {
+                                        firebase_uid
+                                    }
+                                }
+                            }
+                            : undefined,
+                    },
+                    orderBy: {
+                        created_at: "asc"
+                    }
+                }
+            }
+        });
+
+        if (!post) {
+            return res.status(404).json({ message: "Post not found" });
+        }
+
+        const formattedReplies = post.replies
+            ? post.replies.map((reply: any) => ({
+                ...reply,
+                isLiked: reply.likes ? reply.likes.length > 0 : false,
+                likes: undefined,
+            }))
+            : [];
+
+        const formattedPost = {
+            ...post,
+            isLiked: post.likes ? post.likes.length > 0 : false,
+            likes: undefined,
+            isFollowing: followedUserIds.includes(post.user_id),
+            replies: formattedReplies,
+        };
+
+        return res.json({
+            post: formattedPost
+        });
+    } catch (error) {
+        console.error("Lỗi getPostById:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};

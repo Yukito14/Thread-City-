@@ -1,20 +1,27 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../models/post_media_model.dart';
 import '../models/post_model.dart';
 import '../models/user_model.dart';
-import '../models/post_media_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/home_provider.dart';
-import '../providers/user_provider.dart';
+import '../providers/message_provider.dart';
 import '../providers/post_provider.dart';
+import '../providers/user_provider.dart';
 import '../theme/app_colors.dart';
 import '../widgets/reply_sheet.dart';
 import '../widgets/video_player_widget.dart';
+
 import 'profile_screen.dart';
+import 'dart:convert';
+
+
 
 class PostDetailScreen extends StatefulWidget {
   final PostModel post;
@@ -51,7 +58,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     });
 
     try {
-      final replies = await context.read<PostProvider>().getReplies(widget.post.id);
+      final replies =
+      await context.read<PostProvider>().getReplies(widget.post.id);
 
       if (mounted) {
         setState(() {
@@ -134,7 +142,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       appBar: AppBar(
         title: const Text(
           'Thread',
@@ -155,13 +162,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           ),
         ),
       ),
-
       body: RefreshIndicator(
         onRefresh: _loadReplies,
         color: Colors.black,
         child: _buildBody(),
       ),
-
       bottomNavigationBar: SafeArea(
         child: GestureDetector(
           onTap: _openReplySheet,
@@ -254,9 +259,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 onTap: () => _navigateToProfile(context, author),
                 child: _buildAvatar(author?.avatarUrl, size: 44),
               ),
-
               const SizedBox(width: 12),
-
               Expanded(
                 child: GestureDetector(
                   onTap: () => _navigateToProfile(context, author),
@@ -270,7 +273,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           fontSize: 16,
                         ),
                       ),
-
                       if (author?.nickname != null &&
                           author!.nickname != author.username)
                         Text(
@@ -284,7 +286,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   ),
                 ),
               ),
-
               Text(
                 _timeAgo(post.createdAt),
                 style: const TextStyle(
@@ -292,9 +293,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   fontSize: 14,
                 ),
               ),
-
               const SizedBox(width: 8),
-
               const Icon(
                 Icons.more_horiz,
                 color: AppColors.textSecondary,
@@ -302,15 +301,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
           _buildRichContent(post.content),
-
           if (post.media.isNotEmpty) _buildMedia(post.media),
-
           const SizedBox(height: 16),
-
           Row(
             children: [
               GestureDetector(
@@ -324,7 +318,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       size: 24,
                       color: _isLiked ? Colors.red : AppColors.icon,
                     ),
-
                     if (_likeCount > 0) ...[
                       const SizedBox(width: 6),
                       Text(
@@ -339,9 +332,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(width: 24),
-
               GestureDetector(
                 onTap: _openReplySheet,
                 behavior: HitTestBehavior.opaque,
@@ -353,7 +344,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       size: 24,
                       color: AppColors.icon,
                     ),
-
                     if (post.commentCount > 0) ...[
                       const SizedBox(width: 6),
                       Text(
@@ -368,25 +358,19 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(width: 24),
-
               _ActionBtn(
                 icon: Icons.repeat_outlined,
                 onTap: () => showThreadRepostSheet(context, post),
               ),
-
               const SizedBox(width: 24),
-
               _ActionBtn(
                 icon: Icons.send_outlined,
                 onTap: () => showThreadShareSheet(context, post),
               ),
             ],
           ),
-
           const SizedBox(height: 16),
-
           const Divider(
             height: 1,
             thickness: 0.5,
@@ -403,7 +387,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     if (diff.inMinutes < 1) return 'now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
     if (diff.inHours < 24) return '${diff.inHours}h';
-
     return '${diff.inDays}d';
   }
 }
@@ -679,7 +662,6 @@ class _ReplyCardState extends State<_ReplyCard> {
                         onTap: () => _navigateToProfile(context, author),
                         child: _buildAvatar(author?.avatarUrl, size: 36),
                       ),
-
                       if (totalReplies > 0)
                         Expanded(
                           child: Container(
@@ -689,9 +671,7 @@ class _ReplyCardState extends State<_ReplyCard> {
                         ),
                     ],
                   ),
-
                   const SizedBox(width: 12),
-
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -710,7 +690,6 @@ class _ReplyCardState extends State<_ReplyCard> {
                                 ),
                               ),
                             ),
-
                             Text(
                               _timeAgo(widget.reply.createdAt),
                               style: const TextStyle(
@@ -720,19 +699,14 @@ class _ReplyCardState extends State<_ReplyCard> {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 4),
-
                         _buildRichContent(
                           widget.reply.content,
                           isSmall: true,
                         ),
-
                         if (widget.reply.media.isNotEmpty)
                           _buildMedia(widget.reply.media),
-
                         const SizedBox(height: 12),
-
                         Row(
                           children: [
                             GestureDetector(
@@ -750,7 +724,6 @@ class _ReplyCardState extends State<_ReplyCard> {
                                         ? Colors.red
                                         : AppColors.icon,
                                   ),
-
                                   if (_likeCount > 0) ...[
                                     const SizedBox(width: 6),
                                     Text(
@@ -765,9 +738,7 @@ class _ReplyCardState extends State<_ReplyCard> {
                                 ],
                               ),
                             ),
-
                             const SizedBox(width: 24),
-
                             GestureDetector(
                               onTap: () {
                                 showModalBottomSheet(
@@ -789,7 +760,6 @@ class _ReplyCardState extends State<_ReplyCard> {
                                     size: 24,
                                     color: AppColors.icon,
                                   ),
-
                                   if (widget.reply.commentCount > 0) ...[
                                     const SizedBox(width: 6),
                                     Text(
@@ -804,17 +774,13 @@ class _ReplyCardState extends State<_ReplyCard> {
                                 ],
                               ),
                             ),
-
                             const SizedBox(width: 24),
-
                             _ActionBtn(
                               icon: Icons.repeat_outlined,
                               onTap: () =>
                                   showThreadRepostSheet(context, widget.reply),
                             ),
-
                             const SizedBox(width: 24),
-
                             _ActionBtn(
                               icon: Icons.send_outlined,
                               onTap: () =>
@@ -822,7 +788,6 @@ class _ReplyCardState extends State<_ReplyCard> {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 12),
                       ],
                     ),
@@ -831,7 +796,6 @@ class _ReplyCardState extends State<_ReplyCard> {
               ),
             ),
           ),
-
           if (_showAllReplies && totalReplies >= 1 && totalReplies <= 3)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -851,7 +815,6 @@ class _ReplyCardState extends State<_ReplyCard> {
                               ),
                             ),
                           ),
-
                           Expanded(
                             child: Padding(
                               padding: const EdgeInsets.only(bottom: 16),
@@ -884,7 +847,6 @@ class _ReplyCardState extends State<_ReplyCard> {
                         ),
                       ),
                     ),
-
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(bottom: 16),
@@ -898,7 +860,6 @@ class _ReplyCardState extends State<_ReplyCard> {
                 ),
               ),
             ),
-
           if (totalReplies >= 1 &&
               totalReplies <= 3 &&
               !_showAllReplies &&
@@ -917,7 +878,6 @@ class _ReplyCardState extends State<_ReplyCard> {
                       ),
                     ),
                   ),
-
                   GestureDetector(
                     onTap: () {
                       setState(() {
@@ -936,9 +896,7 @@ class _ReplyCardState extends State<_ReplyCard> {
                 ],
               ),
             ),
-
           const SizedBox(height: 12),
-
           const Divider(
             height: 1,
             thickness: 0.5,
@@ -962,9 +920,7 @@ class _ReplyCardState extends State<_ReplyCard> {
           onTap: () => _navigateToProfile(context, author),
           child: _buildAvatar(author?.avatarUrl, size: 24),
         ),
-
         const SizedBox(width: 8),
-
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -981,7 +937,6 @@ class _ReplyCardState extends State<_ReplyCard> {
                       ),
                     ),
                   ),
-
                   if (isAuthor) ...[
                     const SizedBox(width: 6),
                     Container(
@@ -1003,9 +958,7 @@ class _ReplyCardState extends State<_ReplyCard> {
                       ),
                     ),
                   ],
-
                   const Spacer(),
-
                   Text(
                     _timeAgo(authorReply.createdAt),
                     style: const TextStyle(
@@ -1015,14 +968,11 @@ class _ReplyCardState extends State<_ReplyCard> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 4),
-
               _buildRichContent(
                 authorReply.content,
                 isSmall: true,
               ),
-
               if (authorReply.media.isNotEmpty) _buildMedia(authorReply.media),
             ],
           ),
@@ -1037,7 +987,6 @@ class _ReplyCardState extends State<_ReplyCard> {
     if (diff.inMinutes < 1) return 'now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
     if (diff.inHours < 24) return '${diff.inHours}h';
-
     return '${diff.inDays}d';
   }
 }
@@ -1072,7 +1021,6 @@ class ThreadCurvePainter extends CustomPainter {
 
     if (isLast) {
       path.lineTo(startX, cornerY);
-
       path.quadraticBezierTo(
         startX,
         18.0,
@@ -1084,7 +1032,6 @@ class ThreadCurvePainter extends CustomPainter {
 
       final branchPath = Path();
       branchPath.moveTo(startX, cornerY);
-
       branchPath.quadraticBezierTo(
         startX,
         18.0,
@@ -1108,31 +1055,400 @@ class ThreadCurvePainter extends CustomPainter {
 // Share Sheet
 // ─────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────
+// Share Sheet
+// ─────────────────────────────────────────────────────────────
+
 void showThreadShareSheet(BuildContext context, PostModel post) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => _ThreadShareSheet(post: post),
+    builder: (_) => _ThreadShareSheet(
+      post: post,
+      parentContext: context,
+    ),
   );
 }
 
-class _ThreadShareSheet extends StatelessWidget {
+class _ThreadShareSheet extends StatefulWidget {
   final PostModel post;
+  final BuildContext parentContext;
 
   const _ThreadShareSheet({
     required this.post,
+    required this.parentContext,
   });
 
-  String get _postLink {
-    return 'https://threadcity.app/posts/${post.id}';
-  }
+  @override
+  State<_ThreadShareSheet> createState() => _ThreadShareSheetState();
+}
+
+class _ThreadShareSheetState extends State<_ThreadShareSheet> {
+  bool _isLoadingUsers = true;
+  bool _isSearching = false;
+  bool _isSending = false;
+
+  List<Map<String, dynamic>> _shareUsers = [];
+  List<Map<String, dynamic>> _searchResults = [];
+
+  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _messageController = TextEditingController();
+
+  Timer? _searchDebounce;
+  String _keyword = '';
+
+  final List<Map<String, dynamic>> _selectedUsers = [];
+
+  PostModel get post => widget.post;
+
+  String get _postLink => 'https://threadcity.app/posts/${post.id}';
 
   String get _shareText {
     final username = post.author?.username ?? 'user';
     final content = post.content.trim();
 
     return 'Xem bài viết của @$username trên Thread City:\n\n$content\n\n$_postLink';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadShareUsers();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  int? _toInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    return int.tryParse(value.toString());
+  }
+
+  bool _containsSelectedUser(Map<String, dynamic> user) {
+    final id = _toInt(user['id']);
+    if (id == null) return false;
+
+    return _selectedUsers.any((u) => _toInt(u['id']) == id);
+  }
+
+  void _toggleSelectedUser(Map<String, dynamic> user) {
+    final id = _toInt(user['id']);
+    if (id == null) return;
+
+    final index =
+    _selectedUsers.indexWhere((u) => _toInt(u['id']) == id);
+
+    setState(() {
+      if (index != -1) {
+        _selectedUsers.removeAt(index);
+      } else {
+        _selectedUsers.add(user);
+      }
+    });
+  }
+
+  String _removeVietnameseMarks(String value) {
+    var text = value.toLowerCase();
+
+    const vietnameseMap = {
+      'a': 'àáạảãâầấậẩẫăằắặẳẵ',
+      'e': 'èéẹẻẽêềếệểễ',
+      'i': 'ìíịỉĩ',
+      'o': 'òóọỏõôồốộổỗơờớợởỡ',
+      'u': 'ùúụủũưừứựửữ',
+      'y': 'ỳýỵỷỹ',
+      'd': 'đ',
+    };
+
+    vietnameseMap.forEach((nonMark, marks) {
+      for (final mark in marks.split('')) {
+        text = text.replaceAll(mark, nonMark);
+      }
+    });
+
+    return text;
+  }
+
+  String _searchText(dynamic value) {
+    return _removeVietnameseMarks((value ?? '').toString().trim());
+  }
+
+  bool _matchesKeyword(Map<String, dynamic> user, String keyword) {
+    final q = _searchText(keyword);
+    if (q.isEmpty) return true;
+
+    final username = _searchText(user['username']);
+    final nickname = _searchText(user['nickname']);
+
+    return username.contains(q) || nickname.contains(q);
+  }
+
+  void _addUniqueUser({
+    required List<Map<String, dynamic>> list,
+    required Set<int> addedIds,
+    required Map<String, dynamic> user,
+    int? currentUserId,
+  }) {
+    final userId = _toInt(user['id']);
+
+    if (userId == null) return;
+    if (currentUserId != null && userId == currentUserId) return;
+    if (addedIds.contains(userId)) return;
+
+    addedIds.add(userId);
+    list.add(user);
+  }
+
+  Future<void> _loadShareUsers() async {
+    final authData = context.read<AuthProvider>().currentUserData;
+    final firebaseUid = authData?['firebase_uid'];
+    final currentUserId = _toInt(authData?['id']);
+
+    if (firebaseUid == null) {
+      if (mounted) {
+        setState(() {
+          _isLoadingUsers = false;
+          _shareUsers = [];
+        });
+      }
+      return;
+    }
+
+    try {
+      final messageProvider = context.read<MessageProvider>();
+      final userProvider = context.read<UserProvider>();
+
+      if (messageProvider.conversations.isEmpty) {
+        await messageProvider.loadConversations(firebaseUid);
+      }
+
+      final List<Map<String, dynamic>> result = [];
+      final Set<int> addedIds = {};
+
+      for (final conversation in messageProvider.conversations) {
+        final rawUser = conversation['other_user'];
+        if (rawUser is Map) {
+          _addUniqueUser(
+            list: result,
+            addedIds: addedIds,
+            user: Map<String, dynamic>.from(rawUser),
+            currentUserId: currentUserId,
+          );
+        }
+      }
+
+      final followingKey = currentUserId?.toString() ?? firebaseUid;
+      final followingUsers = await userProvider.getUserFollowing(followingKey);
+
+      for (final user in followingUsers) {
+        _addUniqueUser(
+          list: result,
+          addedIds: addedIds,
+          user: Map<String, dynamic>.from(user),
+          currentUserId: currentUserId,
+        );
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _shareUsers = result;
+        _isLoadingUsers = false;
+      });
+    } catch (e) {
+      debugPrint('[SHARE_SHEET] Lỗi load người nhận: $e');
+
+      if (!mounted) return;
+
+      setState(() {
+        _shareUsers = [];
+        _isLoadingUsers = false;
+      });
+    }
+  }
+
+  void _onSearchChanged(String value) {
+    final keyword = value.trim();
+
+    setState(() {
+      _keyword = keyword;
+    });
+
+    _searchDebounce?.cancel();
+
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () async {
+      final authData = context.read<AuthProvider>().currentUserData;
+      final firebaseUid = authData?['firebase_uid'];
+      final currentUserId = _toInt(authData?['id']);
+
+      if (firebaseUid == null) return;
+
+      if (keyword.isEmpty) {
+        context.read<MessageProvider>().clearSearch();
+
+        if (!mounted) return;
+
+        setState(() {
+          _isSearching = false;
+          _searchResults = [];
+        });
+        return;
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _isSearching = true;
+      });
+
+      try {
+        final messageProvider = context.read<MessageProvider>();
+
+        await messageProvider.searchUsers(
+          keyword: keyword,
+          firebaseUid: firebaseUid,
+        );
+
+        final List<Map<String, dynamic>> combined = [];
+        final Set<int> addedIds = {};
+
+        for (final user in _shareUsers) {
+          if (_matchesKeyword(user, keyword)) {
+            _addUniqueUser(
+              list: combined,
+              addedIds: addedIds,
+              user: user,
+              currentUserId: currentUserId,
+            );
+          }
+        }
+
+        for (final rawUser in messageProvider.searchResults) {
+          if (rawUser is Map) {
+            final user = Map<String, dynamic>.from(rawUser);
+            if (_matchesKeyword(user, keyword)) {
+              _addUniqueUser(
+                list: combined,
+                addedIds: addedIds,
+                user: user,
+                currentUserId: currentUserId,
+              );
+            }
+          }
+        }
+
+        if (!mounted) return;
+
+        setState(() {
+          _searchResults = combined;
+          _isSearching = false;
+        });
+      } catch (e) {
+        debugPrint('[SHARE_SHEET] Lỗi tìm kiếm user: $e');
+
+        if (!mounted) return;
+
+        setState(() {
+          _searchResults = [];
+          _isSearching = false;
+        });
+      }
+    });
+  }
+
+  Future<void> _sendToSelectedUsers() async {
+    if (_selectedUsers.isEmpty || _isSending) return;
+
+    final authData = context.read<AuthProvider>().currentUserData;
+    final firebaseUid = authData?['firebase_uid'];
+
+    if (firebaseUid == null) return;
+
+    try {
+      setState(() {
+        _isSending = true;
+      });
+
+      final messageProvider = context.read<MessageProvider>();
+      final note = _messageController.text.trim();
+
+      final sharedPayload = {
+        'note': note,
+        'post_id': post.id,
+        'post_link': _postLink,
+        'author_username': post.author?.username ?? 'user',
+        'author_avatar_url': post.author?.avatarUrl,
+        'content': post.content,
+        'media': post.media
+            .map((m) => {
+          'media_url': m.mediaUrl,
+          'media_type': m.mediaType.name,
+        })
+            .toList(),
+        'location': null,
+      };
+
+      final contentToSend =
+          '__THREAD_SHARED_POST__ ${jsonEncode(sharedPayload)}';
+
+      for (final user in _selectedUsers) {
+        final targetUserId = _toInt(user['id']);
+        if (targetUserId == null) continue;
+
+        final conversation = await messageProvider.createOrGetConversation(
+          firebaseUid: firebaseUid,
+          targetUserId: targetUserId,
+        );
+
+        if (conversation == null) continue;
+
+        final conversationId = _toInt(conversation['id']);
+        if (conversationId == null) continue;
+
+        await messageProvider.sendMessage(
+          conversationId: conversationId,
+          firebaseUid: firebaseUid,
+          content: contentToSend,
+        );
+      }
+
+      if (!mounted) return;
+
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(widget.parentContext).showSnackBar(
+        const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Đã gửi'),
+        ),
+      );
+    } catch (e) {
+      debugPrint('[SHARE_SHEET] Lỗi gửi bài viết: $e');
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(widget.parentContext).showSnackBar(
+        const SnackBar(
+          content: Text('Không thể gửi bài viết'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
+    }
   }
 
   Future<bool> _tryLaunchExternal(List<Uri> uris) async {
@@ -1215,7 +1531,7 @@ class _ThreadShareSheet extends StatelessWidget {
   }
 
   Future<void> _copyLink(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = ScaffoldMessenger.of(widget.parentContext);
 
     await Clipboard.setData(
       ClipboardData(text: _postLink),
@@ -1232,18 +1548,125 @@ class _ThreadShareSheet extends StatelessWidget {
     );
   }
 
+  Widget _buildShareUserList() {
+    final bool isSearchMode = _keyword.isNotEmpty;
+    final users = isSearchMode ? _searchResults : _shareUsers;
+
+    if (_isSearching) {
+      return const SizedBox(
+        height: 112,
+        child: Center(
+          child: CircularProgressIndicator(
+            color: Colors.black,
+            strokeWidth: 2,
+          ),
+        ),
+      );
+    }
+
+    if (_isLoadingUsers && !isSearchMode) {
+      return const SizedBox(
+        height: 112,
+        child: Center(
+          child: CircularProgressIndicator(
+            color: Colors.black,
+            strokeWidth: 2,
+          ),
+        ),
+      );
+    }
+
+    if (users.isEmpty) {
+      return SizedBox(
+        height: 112,
+        child: Center(
+          child: Text(
+            isSearchMode
+                ? 'Không tìm thấy người dùng'
+                : 'Chưa có người từng nhắn tin hoặc đang follow',
+            style: const TextStyle(
+              color: Colors.black54,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 112,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: users.length,
+        itemBuilder: (context, index) {
+          final user = users[index];
+
+          return _ShareUserItem(
+            avatarUrl: user['avatar_url'],
+            username: user['username'] ?? 'user',
+            subtitle: user['nickname'] ?? '',
+            onTap: () => _toggleSelectedUser(user),
+            isSelected: _containsSelectedUser(user),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildActionRow() {
+    return SizedBox(
+      height: 92,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _ShareActionItem(
+            icon: Icons.messenger_outline,
+            label: 'Messenger',
+            color: const Color(0xFF007AFF),
+            onTap: () => _openMessenger(context),
+          ),
+          _ShareActionItem(
+            icon: Icons.link_rounded,
+            label: 'Liên kết',
+            onTap: () => _copyLink(context),
+          ),
+          _ShareActionItem(
+            icon: Icons.send_outlined,
+            label: 'Instagram',
+            color: const Color(0xFFE1306C),
+            onTap: () => _openInstagram(context),
+          ),
+          _ShareActionItem(
+            icon: Icons.ios_share_rounded,
+            label: 'Xem thêm',
+            onTap: () => _openSystemShare(context),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final author = post.author;
+    final hasSelectedUsers = _selectedUsers.isNotEmpty;
 
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-        decoration: const BoxDecoration(
-          color: Color(0xFF101010),
-          borderRadius: BorderRadius.vertical(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          10,
+          16,
+          MediaQuery.of(context).viewInsets.bottom + 16,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(
             top: Radius.circular(28),
+          ),
+          border: Border.all(
+            color: Colors.black12,
+            width: 0.6,
           ),
         ),
         child: Column(
@@ -1253,126 +1676,157 @@ class _ThreadShareSheet extends StatelessWidget {
               width: 42,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: Colors.black26,
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
-
             const SizedBox(height: 18),
-
             Container(
               height: 52,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFF1C1C1E),
+                color: const Color(0xFFF3F3F5),
                 borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: Colors.black12,
+                  width: 1,
+                ),
               ),
-              child: const Row(
-                children: [
-                  Icon(
-                    Icons.search_rounded,
-                    color: Colors.white54,
-                    size: 24,
+              child: Center(
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: _onSearchChanged,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
                   ),
-
-                  SizedBox(width: 10),
-
-                  Expanded(
-                    child: Text(
-                      'Tìm kiếm trong cá nhân Threads',
-                      style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
+                  cursorColor: Colors.black,
+                  decoration: InputDecoration(
+                    isCollapsed: true,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    focusedErrorBorder: InputBorder.none,
+                    filled: false,
+                    fillColor: Colors.transparent,
+                    hintText: 'Tìm kiếm trang cá nhân Threads',
+                    hintStyle: const TextStyle(
+                      color: Colors.black45,
+                      fontSize: 16,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      color: Colors.black54,
+                      size: 22,
+                    ),
+                    prefixIconConstraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    suffixIcon: _keyword.isEmpty
+                        ? null
+                        : GestureDetector(
+                      onTap: () {
+                        _searchController.clear();
+                        _onSearchChanged('');
+                      },
+                      child: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.black45,
+                        size: 20,
                       ),
                     ),
+                    suffixIconConstraints: const BoxConstraints(
+                      minWidth: 28,
+                      minHeight: 28,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
                   ),
-                ],
+                ),
               ),
             ),
-
             const SizedBox(height: 20),
-
-            SizedBox(
-              height: 96,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  _ShareUserItem(
-                    avatarUrl: author?.avatarUrl,
-                    username: author?.username ?? 'author',
-                    subtitle: author?.nickname ?? 'Tác giả',
-                  ),
-
-                  const _ShareUserItem(
-                    username: 'Messenger',
-                    subtitle: 'Gửi qua chat',
-                    icon: Icons.messenger_outline,
-                  ),
-
-                  const _ShareUserItem(
-                    username: 'Instagram',
-                    subtitle: 'Tin nhắn IG',
-                    icon: Icons.camera_alt_outlined,
-                  ),
-
-                  const _ShareUserItem(
-                    username: 'Bạn bè',
-                    subtitle: 'Chia sẻ nhanh',
-                    icon: Icons.group_outlined,
-                  ),
-
-                  const _ShareUserItem(
-                    username: 'Khác',
-                    subtitle: 'Ứng dụng khác',
-                    icon: Icons.more_horiz,
-                  ),
-                ],
-              ),
-            ),
-
+            _buildShareUserList(),
             const SizedBox(height: 14),
-
             Container(
               height: 0.5,
-              color: Colors.white10,
+              color: Colors.black12,
             ),
+            const SizedBox(height: 16),
 
-            const SizedBox(height: 22),
-
-            SizedBox(
-              height: 92,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  _ShareActionItem(
-                    icon: Icons.messenger_outline,
-                    label: 'Messenger',
-                    color: const Color(0xFF007AFF),
-                    onTap: () => _openMessenger(context),
+            if (!hasSelectedUsers) ...[
+              _buildActionRow(),
+            ] else ...[
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F3F5),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: TextField(
+                  controller: _messageController,
+                  minLines: 1,
+                  maxLines: 4,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
                   ),
-
-                  _ShareActionItem(
-                    icon: Icons.link_rounded,
-                    label: 'Liên kết',
-                    onTap: () => _copyLink(context),
+                  cursorColor: Colors.black,
+                  decoration: const InputDecoration(
+                    hintText: 'Nhắn tin...',
+                    hintStyle: TextStyle(
+                      color: Colors.black38,
+                      fontSize: 16,
+                    ),
+                    filled: false,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    focusedErrorBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                   ),
-
-                  _ShareActionItem(
-                    icon: Icons.send_outlined,
-                    label: 'Instagram',
-                    color: const Color(0xFFE1306C),
-                    onTap: () => _openInstagram(context),
-                  ),
-
-                  _ShareActionItem(
-                    icon: Icons.ios_share_rounded,
-                    label: 'Xem thêm',
-                    onTap: () => _openSystemShare(context),
-                  ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton(
+                  onPressed: _isSending ? null : _sendToSelectedUsers,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.black38,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  child: _isSending
+                      ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : const Text(
+                    'Gửi',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -1384,78 +1838,120 @@ class _ShareUserItem extends StatelessWidget {
   final String? avatarUrl;
   final String username;
   final String subtitle;
-  final IconData? icon;
+  final VoidCallback? onTap;
+  final bool isSelected;
 
   const _ShareUserItem({
     this.avatarUrl,
     required this.username,
     required this.subtitle,
-    this.icon,
+    this.onTap,
+    this.isSelected = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 96,
-      margin: const EdgeInsets.only(right: 12),
-      child: Column(
-        children: [
-          Container(
-            width: 66,
-            height: 66,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFF222225),
-              border: Border.all(
-                color: Colors.white10,
-                width: 0.8,
-              ),
-            ),
-            child: ClipOval(
-              child: avatarUrl != null && avatarUrl!.isNotEmpty
-                  ? Image.network(
-                avatarUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Icon(
-                  icon ?? Icons.person,
-                  color: Colors.white70,
-                  size: 28,
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 96,
+        margin: const EdgeInsets.only(right: 12),
+        child: Column(
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                _buildDarkAvatar(
+                  avatarUrl: avatarUrl,
+                  username: username,
+                  size: 66,
                 ),
-              )
-                  : Icon(
-                icon ?? Icons.person,
-                color: Colors.white70,
-                size: 28,
+                if (isSelected)
+                  Positioned(
+                    right: -2,
+                    bottom: -2,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.black,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        size: 14,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              username,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-
-          const SizedBox(height: 8),
-
-          Text(
-            username,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.black54,
+                fontSize: 12,
+              ),
             ),
-          ),
-
-          Text(
-            subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white38,
-              fontSize: 12,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
+
+Widget _buildDarkAvatar({
+  required String? avatarUrl,
+  required String username,
+  double size = 66,
+}) {
+  final fallbackUrl = 'https://api.dicebear.com/7.x/avataaars/png?seed=$username';
+
+  return Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: const Color(0xFFF0F0F2),
+      border: Border.all(
+        color: Colors.black12,
+        width: 0.8,
+      ),
+    ),
+    child: ClipOval(
+      child: avatarUrl != null && avatarUrl.isNotEmpty
+          ? Image.network(
+        avatarUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Image.network(
+          fallbackUrl,
+          fit: BoxFit.cover,
+        ),
+      )
+          : Image.network(
+        fallbackUrl,
+        fit: BoxFit.cover,
+      ),
+    ),
+  );
 }
 
 class _ShareActionItem extends StatelessWidget {
@@ -1484,26 +1980,28 @@ class _ShareActionItem extends StatelessWidget {
             Container(
               width: 66,
               height: 66,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Color(0xFF1C1C1E),
+                color: const Color(0xFFF3F3F5),
+                border: Border.all(
+                  color: Colors.black12,
+                  width: 0.8,
+                ),
               ),
               child: Icon(
                 icon,
-                color: color ?? Colors.white,
+                color: color ?? Colors.black,
                 size: 30,
               ),
             ),
-
             const SizedBox(height: 8),
-
             Text(
               label,
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                color: Colors.white,
+                color: Colors.black,
                 fontSize: 13,
                 height: 1.15,
                 fontWeight: FontWeight.w500,
@@ -1549,11 +2047,6 @@ class _ThreadRepostSheet extends StatelessWidget {
         duration: Duration(seconds: 2),
       ),
     );
-
-    // Sau này nếu backend có API repost thì thay bằng:
-    //
-    // await context.read<PostProvider>().repost(post.id);
-    // context.read<HomeProvider>().refreshFeed();
   }
 
   void _handleQuote(BuildContext context) {
@@ -1592,7 +2085,6 @@ class _ThreadRepostSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 10),
-
             Container(
               width: 42,
               height: 4,
@@ -1601,17 +2093,13 @@ class _ThreadRepostSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
-
             const SizedBox(height: 12),
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
                   _buildAvatar(author?.avatarUrl, size: 36),
-
                   const SizedBox(width: 10),
-
                   Expanded(
                     child: Text(
                       author?.username ?? 'Unknown',
@@ -1624,23 +2112,19 @@ class _ThreadRepostSheet extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 12),
-
             _RepostMenuItem(
               icon: Icons.repeat_rounded,
               title: 'Đăng lại',
               subtitle: 'Đăng lại bài viết này lên trang cá nhân của bạn',
               onTap: () => _handleRepost(context),
             ),
-
             _RepostMenuItem(
               icon: Icons.edit_note_rounded,
               title: 'Trích dẫn',
               subtitle: 'Thêm suy nghĩ của bạn trước khi đăng lại',
               onTap: () => _handleQuote(context),
             ),
-
             const SizedBox(height: 8),
           ],
         ),
@@ -1685,9 +2169,7 @@ class _RepostMenuItem extends StatelessWidget {
                   size: 23,
                 ),
               ),
-
               const SizedBox(width: 14),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1700,9 +2182,7 @@ class _RepostMenuItem extends StatelessWidget {
                         color: Colors.black,
                       ),
                     ),
-
                     const SizedBox(height: 2),
-
                     Text(
                       subtitle,
                       style: const TextStyle(

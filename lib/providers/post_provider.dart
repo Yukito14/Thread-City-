@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/post_model.dart';
 import '../repositories/post_repository.dart';
 import 'auth_provider.dart';
@@ -34,13 +35,32 @@ class PostProvider extends ChangeNotifier {
         type: type,
         media: media,
       );
+
       return true;
     } catch (e) {
       _errorMessage = e.toString();
+      debugPrint('Lỗi createPost: $e');
       return false;
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<PostModel?> getPostById(
+      int postId, {
+        String? viewerUid,
+      }) async {
+    try {
+      final uid = viewerUid ?? _authProvider.currentUserData?['firebase_uid'];
+
+      return await _postRepository.getPostById(
+        postId,
+        viewerUid: uid,
+      );
+    } catch (e) {
+      debugPrint('Lỗi getPostById: $e');
+      return null;
     }
   }
 
@@ -50,9 +70,10 @@ class PostProvider extends ChangeNotifier {
         postId: postId,
         firebaseUid: firebaseUid,
       );
+
       return isLiked;
     } catch (e) {
-      print('Lỗi toggleLike: $e');
+      debugPrint('Lỗi toggleLike: $e');
       return false;
     }
   }
@@ -60,9 +81,13 @@ class PostProvider extends ChangeNotifier {
   Future<List<PostModel>> getReplies(int postId) async {
     try {
       final firebaseUid = _authProvider.currentUserData?['firebase_uid'];
-      return await _postRepository.getReplies(postId, firebaseUid: firebaseUid);
+
+      return await _postRepository.getReplies(
+        postId,
+        firebaseUid: firebaseUid,
+      );
     } catch (e) {
-      print('Lỗi getReplies: $e');
+      debugPrint('Lỗi getReplies: $e');
       return [];
     }
   }

@@ -1,10 +1,14 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../providers/message_provider.dart';
 import '../../theme/app_colors.dart';
-import 'dart:async';
+import '../../providers/post_provider.dart';
+import 'post_detail_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final int conversationId;
@@ -136,6 +140,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final username = widget.otherUser['username'] ?? 'user';
+    final nickname = widget.otherUser['nickname'];
     final avatarUrl = widget.otherUser['avatar_url'];
 
     return Scaffold(
@@ -158,20 +163,49 @@ class _ChatScreenState extends State<ChatScreen> {
             _ChatAvatar(username: username, avatarUrl: avatarUrl),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                username,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.2,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    username,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  if (nickname != null &&
+                      nickname.toString().trim().isNotEmpty &&
+                      nickname != username)
+                    Text(
+                      nickname.toString(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(
+              Icons.more_horiz_rounded,
+              color: AppColors.textPrimary,
+              size: 26,
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(0.5),
           child: Container(height: 0.5, color: AppColors.border),
@@ -226,35 +260,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     final currentUid = _currentUid;
                     final isMe = senderUid == currentUid;
 
-                    return Align(
-                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width * 0.72,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isMe ? AppColors.textPrimary : AppColors.inputFill,
-                          borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(18),
-                            topRight: const Radius.circular(18),
-                            bottomLeft: Radius.circular(isMe ? 18 : 4),
-                            bottomRight: Radius.circular(isMe ? 4 : 18),
-                          ),
-                        ),
-                        child: Text(
-                          message['content'] ?? '',
-                          style: TextStyle(
-                            color: isMe ? AppColors.surface : AppColors.textPrimary,
-                            fontSize: 15,
-                            height: 1.35,
-                          ),
-                        ),
-                      ),
+                    return _MessageBubble(
+                      message: message,
+                      isMe: isMe,
                     );
                   },
                 );
@@ -330,22 +338,489 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
-class _ChatAvatar extends StatelessWidget {
-  final String username;
-  final String? avatarUrl;
+// ─────────────────────────────────────────────────────────────
+// Message Bubble
+// ─────────────────────────────────────────────────────────────
 
-  const _ChatAvatar({
-    required this.username,
-    required this.avatarUrl,
+class _MessageBubble extends StatelessWidget {
+  final Map<String, dynamic> message;
+  final bool isMe;
+
+  const _MessageBubble({
+    required this.message,
+    required this.isMe,
   });
 
   @override
   Widget build(BuildContext context) {
-    final fallbackUrl = 'https://api.dicebear.com/7.x/avataaars/png?seed=$username';
+    final content = (message['content'] ?? '').toString();
+    final sharedPost = _SharedPostPayload.tryParse(content);
+
+    if (sharedPost != null) {
+      return Align(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.76,
+          ),
+          child: Column(
+            crossAxisAlignment:
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              if (sharedPost.note.trim().isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isMe
+                        ? AppColors.textPrimary
+                        : AppColors.inputFill,
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(18),
+                      topRight: const Radius.circular(18),
+                      bottomLeft: Radius.circular(isMe ? 18 : 4),
+                      bottomRight: Radius.circular(isMe ? 4 : 18),
+                    ),
+                  ),
+                  child: Text(
+                    sharedPost.note,
+                    style: TextStyle(
+                      color: isMe
+                          ? AppColors.surface
+                          : AppColors.textPrimary,
+                      fontSize: 15,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+
+              _SharedPostCard(payload: sharedPost),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 10,
+        ),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.72,
+        ),
+        decoration: BoxDecoration(
+          color: isMe ? AppColors.textPrimary : AppColors.inputFill,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
+            bottomLeft: Radius.circular(isMe ? 18 : 4),
+            bottomRight: Radius.circular(isMe ? 4 : 18),
+          ),
+        ),
+        child: Text(
+          content,
+          style: TextStyle(
+            color: isMe ? AppColors.surface : AppColors.textPrimary,
+            fontSize: 15,
+            height: 1.35,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Shared Post Payload Parser
+// ─────────────────────────────────────────────────────────────
+
+class _SharedPostPayload {
+  static const String marker = '__THREAD_SHARED_POST__';
+
+  final String note;
+  final int? postId;
+  final String postLink;
+  final String authorUsername;
+  final String? authorAvatarUrl;
+  final String content;
+  final List<String> mediaUrls;
+  final String? location;
+
+  const _SharedPostPayload({
+    required this.note,
+    required this.postId,
+    required this.postLink,
+    required this.authorUsername,
+    required this.authorAvatarUrl,
+    required this.content,
+    required this.mediaUrls,
+    required this.location,
+  });
+
+  static _SharedPostPayload? tryParse(String raw) {
+    final text = raw.trim();
+
+    if (text.startsWith(marker)) {
+      try {
+        final jsonText = text.substring(marker.length).trim();
+        final map = jsonDecode(jsonText) as Map<String, dynamic>;
+
+        final mediaList = map['media'];
+        final List<String> urls = [];
+
+        if (mediaList is List) {
+          for (final item in mediaList) {
+            if (item is Map) {
+              final url = item['media_url'] ??
+                  item['mediaUrl'] ??
+                  item['url'] ??
+                  item['image_url'];
+
+              if (url != null && url.toString().trim().isNotEmpty) {
+                urls.add(url.toString());
+              }
+            } else if (item != null) {
+              final url = item.toString();
+              if (url.trim().isNotEmpty) urls.add(url);
+            }
+          }
+        }
+
+        return _SharedPostPayload(
+          note: (map['note'] ?? '').toString(),
+          postId: _toInt(map['post_id'] ?? map['postId']),
+          postLink: (map['post_link'] ?? map['postLink'] ?? '').toString(),
+          authorUsername:
+          (map['author_username'] ?? map['authorUsername'] ?? 'user')
+              .toString(),
+          authorAvatarUrl:
+          (map['author_avatar_url'] ?? map['authorAvatarUrl'])
+              ?.toString(),
+          content: (map['content'] ?? '').toString(),
+          mediaUrls: urls,
+          location: map['location']?.toString(),
+        );
+      } catch (_) {
+        return null;
+      }
+    }
+
+    // Fallback cho tin nhắn share cũ dạng text:
+    // "lời nhắn\n\nXem bài viết của @abc trên Thread City:\n\ncontent\n\nlink"
+    if (text.contains('Xem bài viết của @') &&
+        text.contains('trên Thread City:')) {
+      final shareStart = text.indexOf('Xem bài viết của @');
+      final note = shareStart > 0 ? text.substring(0, shareStart).trim() : '';
+
+      final shareBody = text.substring(shareStart).trim();
+      final usernameMatch =
+      RegExp(r'Xem bài viết của @(.+?) trên Thread City:')
+          .firstMatch(shareBody);
+
+      final authorUsername = usernameMatch?.group(1)?.trim() ?? 'user';
+
+      final parts = shareBody.split('\n\n');
+      String content = '';
+      String link = '';
+
+      if (parts.length >= 2) {
+        content = parts.sublist(1).join('\n\n').trim();
+
+        final linkMatch =
+        RegExp(r'https?:\/\/[^\s]+').firstMatch(content);
+
+        if (linkMatch != null) {
+          link = linkMatch.group(0) ?? '';
+          content = content.replaceAll(link, '').trim();
+        }
+      }
+
+      return _SharedPostPayload(
+        note: note,
+        postId: null,
+        postLink: link,
+        authorUsername: authorUsername,
+        authorAvatarUrl: null,
+        content: content,
+        mediaUrls: const [],
+        location: null,
+      );
+    }
+
+    return null;
+  }
+
+  static int? _toInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    return int.tryParse(value.toString());
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Shared Post Card
+// ─────────────────────────────────────────────────────────────
+
+class _SharedPostCard extends StatelessWidget {
+  final _SharedPostPayload payload;
+
+  const _SharedPostCard({
+    required this.payload,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _openPostInApp(context),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.inputFill,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: AppColors.border,
+            width: 0.6,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                _ChatAvatar(
+                  username: payload.authorUsername,
+                  avatarUrl: payload.authorAvatarUrl,
+                  size: 34,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    payload.authorUsername,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.open_in_new_rounded,
+                  color: AppColors.textSecondary,
+                  size: 17,
+                ),
+              ],
+            ),
+
+            if (payload.content.trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                payload.content,
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 15,
+                  height: 1.35,
+                ),
+              ),
+            ],
+
+            if (payload.mediaUrls.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _SharedPostMediaGrid(mediaUrls: payload.mediaUrls),
+            ],
+
+            if (payload.location != null &&
+                payload.location!.trim().isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(
+                payload.location!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 12),
+
+            Row(
+              children: const [
+                Icon(
+                  Icons.favorite_border_rounded,
+                  color: AppColors.textSecondary,
+                  size: 22,
+                ),
+                SizedBox(width: 18),
+                Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  color: AppColors.textSecondary,
+                  size: 21,
+                ),
+                SizedBox(width: 18),
+                Icon(
+                  Icons.repeat_rounded,
+                  color: AppColors.textSecondary,
+                  size: 23,
+                ),
+                SizedBox(width: 18),
+                Icon(
+                  Icons.send_outlined,
+                  color: AppColors.textSecondary,
+                  size: 22,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  Future<void> _openPostInApp(BuildContext context) async {
+    final postId = payload.postId;
+
+    if (postId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không tìm thấy bài viết'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final authData = context.read<AuthProvider>().currentUserData;
+      final viewerUid = authData?['firebase_uid'];
+
+      final post = await context.read<PostProvider>().getPostById(
+        postId,
+        viewerUid: viewerUid,
+      );
+
+      if (post == null) {
+        if (!context.mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Bài viết không còn tồn tại'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      if (!context.mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PostDetailScreen(post: post),
+        ),
+      );
+    } catch (e) {
+      debugPrint('[CHAT] Lỗi mở bài viết trong app: $e');
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không thể mở bài viết'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+}
+
+
+
+class _SharedPostMediaGrid extends StatelessWidget {
+  final List<String> mediaUrls;
+
+  const _SharedPostMediaGrid({
+    required this.mediaUrls,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (mediaUrls.length == 1) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: Image.network(
+            mediaUrls.first,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          ),
+        ),
+      );
+    }
+
+    final shown = mediaUrls.take(2).toList();
+
+    return SizedBox(
+      height: 190,
+      child: Row(
+        children: [
+          for (int i = 0; i < shown.length; i++) ...[
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Image.network(
+                  shown[i],
+                  height: 190,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+            if (i != shown.length - 1) const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Avatar
+// ─────────────────────────────────────────────────────────────
+
+class _ChatAvatar extends StatelessWidget {
+  final String username;
+  final String? avatarUrl;
+  final double size;
+
+  const _ChatAvatar({
+    required this.username,
+    required this.avatarUrl,
+    this.size = 34,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fallbackUrl =
+        'https://api.dicebear.com/7.x/avataaars/png?seed=$username';
 
     return Container(
-      width: 34,
-      height: 34,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: AppColors.inputFill,
         shape: BoxShape.circle,
@@ -369,6 +844,10 @@ class _ChatAvatar extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────
+// Typing Bubble
+// ─────────────────────────────────────────────────────────────
 
 class _TypingBubble extends StatefulWidget {
   const _TypingBubble();
@@ -412,7 +891,8 @@ class _TypingBubbleState extends State<_TypingBubble>
           return Row(
             mainAxisSize: MainAxisSize.min,
             children: List.generate(3, (index) {
-              final value = (_controller.value - index * 0.2).clamp(0.0, 1.0);
+              final value =
+              (_controller.value - index * 0.2).clamp(0.0, 1.0);
               final opacity = value < 0.5 ? 0.35 : 1.0;
 
               return AnimatedOpacity(
