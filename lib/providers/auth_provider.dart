@@ -227,6 +227,17 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  void updateCurrentUserData(Map<String, dynamic> updatedData) {
+    if (_currentUserData == null) return;
+
+    _currentUserData = {
+      ..._currentUserData!,
+      ...updatedData,
+    };
+
+    notifyListeners();
+  }
+
   Future<void> signOut() async {
     await _authRepository.signOut();
 
@@ -245,6 +256,7 @@ class AuthProvider extends ChangeNotifier {
       await _authRepository.sendPasswordResetEmail(email);
 
       _isLoading = false;
+
       notifyListeners();
       return true;
     } catch (e) {

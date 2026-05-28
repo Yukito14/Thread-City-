@@ -93,6 +93,7 @@ class UserProvider extends ChangeNotifier {
 
   Future<bool> updateProfile({
     required String firebaseUid,
+    String? username,
     String? bio,
     String? avatarUrl,
     String? nickname,
@@ -103,12 +104,12 @@ class UserProvider extends ChangeNotifier {
     try {
       await _userRepository.updateProfile(
         firebaseUid: firebaseUid,
+        username: username,
         bio: bio,
         avatarUrl: avatarUrl,
         nickname: nickname,
       );
 
-      // Sau khi update thành công, tải lại profile để cập nhật UI
       await fetchProfile(firebaseUid, viewerUid: firebaseUid);
       return true;
     } catch (e) {

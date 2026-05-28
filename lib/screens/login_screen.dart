@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/auth_provider.dart';
 import '../routes/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,6 +16,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
   bool _obscurePassword = true;
 
   @override
@@ -28,9 +29,22 @@ class _LoginScreenState extends State<LoginScreen> {
   void _handleLogin() async {
     final authProvider = context.read<AuthProvider>();
 
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng nhập đầy đủ email và mật khẩu'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     final success = await authProvider.signIn(
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
+      email: email,
+      password: password,
     );
 
     if (success && mounted) {
@@ -48,6 +62,68 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _handleForgotPassword() async {
+    final authProvider = context.read<AuthProvider>();
+    final email = _emailController.text.trim();
+
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng nhập email trước khi đặt lại mật khẩu'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    if (!email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng nhập đúng email, không dùng tên đăng nhập'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Đặt lại mật khẩu'),
+        content: Text(
+          'Hệ thống sẽ gửi email đặt lại mật khẩu đến:\n\n$email\n\nBạn có muốn tiếp tục không?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Gửi email'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    final ok = await authProvider.forgotPassword(email);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? 'Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư hoặc mục Spam.'
+              : authProvider.errorMessage ?? 'Gửi email đặt lại mật khẩu thất bại',
+        ),
+        backgroundColor: ok ? AppColors.success : AppColors.error,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLoading = context.watch<AuthProvider>().isLoading;
@@ -63,11 +139,10 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Top section
                   Column(
                     children: [
                       const SizedBox(height: 40),
-                      // Logo/Title
+
                       Container(
                         decoration: BoxDecoration(
                           color: AppColors.primaryAccent,
@@ -94,14 +169,18 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 40),
+
                       Text(
                         'Chào mừng trở lại',
                         style: AppTypography.displaySmall.copyWith(
                           color: AppColors.textPrimary,
                         ),
                       ),
+
                       const SizedBox(height: 8),
+
                       Text(
                         'Đăng nhập vào tài khoản của bạn để tiếp tục',
                         style: AppTypography.bodyMedium.copyWith(
@@ -112,11 +191,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
 
-                  // Middle section - Form
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Email field
                       TextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
@@ -127,9 +204,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIconColor: AppColors.textSecondary,
                         ),
                       ),
+
                       const SizedBox(height: 16),
 
-                      // Password field
                       TextField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
@@ -144,27 +221,30 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ? Icons.visibility_off_outlined
                                   : Icons.visibility_outlined,
                             ),
-                            onPressed: () {
-                              setState(
-                                      () => _obscurePassword = !_obscurePassword);
+                            onPressed: isLoading
+                                ? null
+                                : () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
                             },
                             color: AppColors.textSecondary,
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 12),
 
-                      // Forgot password link
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: isLoading ? null : () {},
+                          onPressed: isLoading ? null : _handleForgotPassword,
                           child: const Text('Quên mật khẩu?'),
                         ),
                       ),
+
                       const SizedBox(height: 24),
 
-                      // Login button
                       SizedBox(
                         height: 56,
                         child: ElevatedButton(
@@ -192,7 +272,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
 
-                  // Bottom section - Sign up
                   Padding(
                     padding: const EdgeInsets.only(bottom: 32),
                     child: Row(

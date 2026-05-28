@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../models/post_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/user_provider.dart';
@@ -31,10 +32,19 @@ class _ProfileScreenState extends State<ProfileScreen>
   List<PostModel> _localUserPosts = [];
   bool _localIsLoading = false;
 
+  String _firstNonEmpty(List<dynamic> values) {
+    for (final value in values) {
+      final text = value?.toString().trim() ?? '';
+      if (text.isNotEmpty) return text;
+    }
+    return '';
+  }
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _fetchProfile();
     });
@@ -43,14 +53,17 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void didUpdateWidget(covariant ProfileScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+
     if (widget.isActive != oldWidget.isActive && widget.isActive) {
       _fetchProfile();
     }
   }
 
   void _fetchProfile() async {
-    final viewerUid = context.read<AuthProvider>().currentUserData?['firebase_uid'];
+    final viewerUid =
+    context.read<AuthProvider>().currentUserData?['firebase_uid'];
     final targetUid = widget.viewingUserId ?? viewerUid;
+
     if (targetUid == null) return;
 
     if (mounted) {
@@ -61,8 +74,16 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     try {
       final userProvider = context.read<UserProvider>();
-      final data = await userProvider.getProfileDataOnly(targetUid, viewerUid: viewerUid);
-      final posts = await userProvider.getUserPostsOnly(targetUid, viewerUid: viewerUid);
+
+      final data = await userProvider.getProfileDataOnly(
+        targetUid,
+        viewerUid: viewerUid,
+      );
+
+      final posts = await userProvider.getUserPostsOnly(
+        targetUid,
+        viewerUid: viewerUid,
+      );
 
       if (mounted) {
         setState(() {
@@ -89,9 +110,17 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   void _showEditSheet(Map<String, dynamic>? userData) {
     if (userData == null) return;
-    final bioCtrl = TextEditingController(text: userData['bio'] ?? '');
+
+    final bioCtrl = TextEditingController(
+      text: userData['bio'] ?? '',
+    );
+
     final nameCtrl = TextEditingController(
-      text: userData['username'] ?? widget.currentNickname,
+      text: _firstNonEmpty([
+        userData['nickname'],
+        widget.currentNickname,
+        userData['username'],
+      ]),
     );
 
     showModalBottomSheet(
@@ -104,12 +133,14 @@ class _ProfileScreenState extends State<ProfileScreen>
         onSave: () async {
           final uid =
           context.read<AuthProvider>().currentUserData?['firebase_uid'];
+
           if (uid != null) {
             final ok = await context.read<UserProvider>().updateProfile(
               firebaseUid: uid,
-              nickname: nameCtrl.text,
-              bio: bioCtrl.text,
+              nickname: nameCtrl.text.trim(),
+              bio: bioCtrl.text.trim(),
             );
+
             if (ok && context.mounted) {
               Navigator.pop(context);
               _fetchProfile();
@@ -127,11 +158,15 @@ class _ProfileScreenState extends State<ProfileScreen>
     final loggedInUser = context.watch<AuthProvider>().currentUserData;
     final loggedInUid = loggedInUser?['firebase_uid'];
     final loggedInId = loggedInUser?['id']?.toString();
+
     final isMe = widget.viewingUserId == null ||
         widget.viewingUserId == loggedInUid ||
         widget.viewingUserId == loggedInId;
 
-    if (widget.viewingUserId == null && loggedInUid != null && _localUserData == null && !_localIsLoading) {
+    if (widget.viewingUserId == null &&
+        loggedInUid != null &&
+        _localUserData == null &&
+        !_localIsLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _fetchProfile();
       });
@@ -174,10 +209,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                       final uid = context
                           .read<AuthProvider>()
                           .currentUserData?['firebase_uid'];
+
                       if (uid != null) {
                         final ok = await context
                             .read<UserProvider>()
                             .pickAndUploadAvatar(uid);
+
                         if (ok && mounted) {
                           _fetchProfile();
                         }
@@ -232,18 +269,25 @@ class _ProfileScreenState extends State<ProfileScreen>
         child: SizedBox(
           width: 24,
           height: 24,
-          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.textPrimary),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppColors.textPrimary,
+          ),
         ),
       );
     }
 
     if (_localUserPosts.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.edit_note_rounded, size: 56, color: AppColors.textTertiary),
-            const SizedBox(height: 12),
+            Icon(
+              Icons.edit_note_rounded,
+              size: 56,
+              color: AppColors.textTertiary,
+            ),
+            SizedBox(height: 12),
             Text(
               'Chưa có bài viết nào',
               style: TextStyle(
@@ -299,6 +343,14 @@ class _ProfileHeader extends StatefulWidget {
 class _ProfileHeaderState extends State<_ProfileHeader> {
   bool _isFollowing = false;
 
+  String _firstNonEmpty(List<dynamic> values) {
+    for (final value in values) {
+      final text = value?.toString().trim() ?? '';
+      if (text.isNotEmpty) return text;
+    }
+    return '';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -308,13 +360,17 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
   @override
   void didUpdateWidget(covariant _ProfileHeader oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.userData?['is_following'] != oldWidget.userData?['is_following']) {
+
+    if (widget.userData?['is_following'] !=
+        oldWidget.userData?['is_following']) {
       _isFollowing = widget.userData?['is_following'] ?? false;
     }
   }
 
   void _showFollowersFollowingSheet(BuildContext context, int initialTabIndex) {
-    final userId = widget.userData?['id']?.toString() ?? widget.userData?['firebase_uid']?.toString();
+    final userId = widget.userData?['id']?.toString() ??
+        widget.userData?['firebase_uid']?.toString();
+
     if (userId == null) return;
 
     showModalBottomSheet(
@@ -339,6 +395,20 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
     final followers = widget.stats['followers'] ?? 0;
     final following = widget.stats['following'] ?? 0;
 
+    final nickname = _firstNonEmpty([
+      widget.userData?['nickname'],
+      widget.currentNickname,
+      widget.userData?['username'],
+      widget.currentUsername,
+    ]);
+
+    final username = _firstNonEmpty([
+      widget.userData?['username'],
+      widget.currentUsername,
+    ]);
+
+    final usernameLabel = username.startsWith('@') ? username : '@$username';
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
       child: Column(
@@ -352,7 +422,7 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.userData?['username'] ?? widget.currentNickname,
+                      nickname,
                       style: const TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w800,
@@ -364,7 +434,7 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                     Row(
                       children: [
                         Text(
-                          widget.currentUsername,
+                          usernameLabel,
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
@@ -399,9 +469,9 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                   ],
                 ),
               ),
-              // Avatar
               GestureDetector(
-                onTap: (widget.isMe && !widget.isLoading) ? widget.onPickAvatar : null,
+                onTap:
+                (widget.isMe && !widget.isLoading) ? widget.onPickAvatar : null,
                 child: _ProfileAvatar(
                   url: widget.userData?['avatar_url'],
                   isLoading: widget.isLoading,
@@ -411,7 +481,6 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
             ],
           ),
 
-          // Bio
           if (bio != null && bio.isNotEmpty) ...[
             const SizedBox(height: 16),
             Text(
@@ -426,20 +495,21 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
 
           const SizedBox(height: 20),
 
-          // Stats row
           Row(
             children: [
               _StatItem(
                 value: _formatCount(() {
                   final wasFollowing = widget.userData?['is_following'] ?? false;
+
                   if (wasFollowing && !_isFollowing) {
                     return followers - 1 >= 0 ? followers - 1 : 0;
                   } else if (!wasFollowing && _isFollowing) {
                     return followers + 1;
                   }
+
                   return followers;
                 }()),
-                label: 'người theo dõi',
+                label: 'đang theo dõi',
                 onTap: () => _showFollowersFollowingSheet(context, 0),
               ),
               Container(
@@ -450,7 +520,7 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
               ),
               _StatItem(
                 value: _formatCount(following),
-                label: 'đang theo dõi',
+                label: 'người theo dõi',
                 onTap: () => _showFollowersFollowingSheet(context, 1),
               ),
             ],
@@ -458,7 +528,6 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
 
           const SizedBox(height: 20),
 
-          // Action buttons
           if (widget.isMe)
             Row(
               children: [
@@ -485,18 +554,20 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () async {
-                      // Optimistic UI state toggle
                       setState(() {
                         _isFollowing = !_isFollowing;
                       });
 
-                      final loggedInUser = context.read<AuthProvider>().currentUserData;
+                      final loggedInUser =
+                          context.read<AuthProvider>().currentUserData;
                       final followerUid = loggedInUser?['firebase_uid'];
                       final targetId = widget.userData?['id'];
 
                       if (followerUid != null && targetId != null) {
                         final userProvider = context.read<UserProvider>();
+
                         bool success;
+
                         if (_isFollowing) {
                           success = await userProvider.followUser(
                             followerUid: followerUid,
@@ -509,14 +580,16 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                           );
                         }
 
-                        // Revert if API request failed
                         if (!success && mounted) {
                           setState(() {
                             _isFollowing = !_isFollowing;
                           });
+
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Thao tác thất bại. Vui lòng thử lại.'),
+                              content: Text(
+                                'Thao tác thất bại. Vui lòng thử lại.',
+                              ),
                               backgroundColor: Colors.redAccent,
                             ),
                           );
@@ -526,10 +599,14 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                     child: Container(
                       height: 40,
                       decoration: BoxDecoration(
-                        color: _isFollowing ? AppColors.surface : AppColors.textPrimary,
+                        color: _isFollowing
+                            ? AppColors.surface
+                            : AppColors.textPrimary,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: _isFollowing ? AppColors.border : Colors.transparent,
+                          color: _isFollowing
+                              ? AppColors.border
+                              : Colors.transparent,
                           width: 0.8,
                         ),
                       ),
@@ -539,7 +616,9 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: _isFollowing ? AppColors.textPrimary : AppColors.surface,
+                            color: _isFollowing
+                                ? AppColors.textPrimary
+                                : AppColors.surface,
                           ),
                         ),
                       ),
@@ -551,9 +630,7 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                   child: _ProfileButton(
                     label: 'Nhắc đến',
                     icon: Icons.alternate_email_rounded,
-                    onTap: () {
-                      // Optional mention logic
-                    },
+                    onTap: () {},
                   ),
                 ),
               ],
@@ -564,8 +641,14 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
   }
 
   String _formatCount(int count) {
-    if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
-    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}k';
+    if (count >= 1000000) {
+      return '${(count / 1000000).toStringAsFixed(1)}M';
+    }
+
+    if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(1)}k';
+    }
+
     return count.toString();
   }
 }
@@ -575,7 +658,11 @@ class _ProfileAvatar extends StatelessWidget {
   final bool isLoading;
   final bool isMe;
 
-  const _ProfileAvatar({this.url, required this.isLoading, required this.isMe});
+  const _ProfileAvatar({
+    this.url,
+    required this.isLoading,
+    required this.isMe,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -588,7 +675,10 @@ class _ProfileAvatar extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: AppColors.inputFill,
-            border: Border.all(color: AppColors.border, width: 0.5),
+            border: Border.all(
+              color: AppColors.border,
+              width: 0.5,
+            ),
           ),
           child: ClipOval(
             child: isLoading
@@ -629,7 +719,10 @@ class _ProfileAvatar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.textPrimary,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.surface, width: 2),
+                border: Border.all(
+                  color: AppColors.surface,
+                  width: 2,
+                ),
               ),
               child: const Icon(
                 Icons.add_rounded,
@@ -648,7 +741,11 @@ class _StatItem extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
 
-  const _StatItem({required this.value, required this.label, this.onTap});
+  const _StatItem({
+    required this.value,
+    required this.label,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -701,12 +798,19 @@ class _ProfileButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border, width: 0.8),
+          border: Border.all(
+            color: AppColors.border,
+            width: 0.8,
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 16, color: AppColors.textPrimary),
+            Icon(
+              icon,
+              size: 16,
+              color: AppColors.textPrimary,
+            ),
             const SizedBox(width: 6),
             Text(
               label,
@@ -732,7 +836,11 @@ class _EmptyReplies extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.chat_bubble_outline_rounded, size: 48, color: AppColors.textTertiary),
+          Icon(
+            Icons.chat_bubble_outline_rounded,
+            size: 48,
+            color: AppColors.textTertiary,
+          ),
           SizedBox(height: 12),
           Text(
             'Chưa có câu trả lời',
@@ -750,20 +858,29 @@ class _EmptyReplies extends StatelessWidget {
 
 class _TabDelegate extends SliverPersistentHeaderDelegate {
   final TabBar tabBar;
+
   const _TabDelegate(this.tabBar);
 
   @override
   double get minExtent => tabBar.preferredSize.height;
+
   @override
   double get maxExtent => tabBar.preferredSize.height;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+      BuildContext context,
+      double shrinkOffset,
+      bool overlapsContent,
+      ) {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(
-          bottom: BorderSide(color: AppColors.border, width: 0.5),
+          bottom: BorderSide(
+            color: AppColors.border,
+            width: 0.5,
+          ),
         ),
       ),
       child: tabBar,
@@ -793,9 +910,14 @@ class _EditProfileSheet extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(20),
+        ),
         border: const Border(
-          top: BorderSide(color: AppColors.border, width: 0.5),
+          top: BorderSide(
+            color: AppColors.border,
+            width: 0.5,
+          ),
         ),
       ),
       child: Padding(
@@ -824,7 +946,10 @@ class _EditProfileSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            _EditField(label: 'Tên hiển thị', controller: nameController),
+            _EditField(
+              label: 'Tên hiển thị',
+              controller: nameController,
+            ),
             const SizedBox(height: 16),
             _EditField(
               label: 'Tiểu sử',
@@ -848,7 +973,10 @@ class _EditProfileSheet extends StatelessWidget {
                 ),
                 child: const Text(
                   'Lưu thay đổi',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
                 ),
               ),
             ),
@@ -898,20 +1026,31 @@ class _EditField extends StatelessWidget {
           ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.textTertiary),
+            hintStyle: const TextStyle(
+              color: AppColors.textTertiary,
+            ),
             filled: true,
             fillColor: AppColors.inputFill,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border, width: 0.5),
+              borderSide: const BorderSide(
+                color: AppColors.border,
+                width: 0.5,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border, width: 0.5),
+              borderSide: const BorderSide(
+                color: AppColors.border,
+                width: 0.5,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.textPrimary, width: 1),
+              borderSide: const BorderSide(
+                color: AppColors.textPrimary,
+                width: 1,
+              ),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
@@ -936,7 +1075,8 @@ class _FollowersFollowingSheet extends StatefulWidget {
   });
 
   @override
-  State<_FollowersFollowingSheet> createState() => _FollowersFollowingSheetState();
+  State<_FollowersFollowingSheet> createState() =>
+      _FollowersFollowingSheetState();
 }
 
 class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
@@ -947,21 +1087,30 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
   bool _isLoadingFollowers = true;
   bool _isLoadingFollowing = true;
 
+  String _firstNonEmpty(List<dynamic> values) {
+    for (final value in values) {
+      final text = value?.toString().trim() ?? '';
+      if (text.isNotEmpty) return text;
+    }
+    return '';
+  }
+
   @override
   void initState() {
     super.initState();
+
     _tabController = TabController(
       length: 2,
       vsync: this,
       initialIndex: widget.initialIndex,
     );
+
     _loadData();
   }
 
   void _loadData() async {
     final userProvider = context.read<UserProvider>();
 
-    // Fetch followers
     userProvider.getUserFollowers(widget.userId).then((list) {
       if (mounted) {
         setState(() {
@@ -971,7 +1120,6 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
       }
     });
 
-    // Fetch following
     userProvider.getUserFollowing(widget.userId).then((list) {
       if (mounted) {
         setState(() {
@@ -989,7 +1137,7 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
   }
 
   void _navigateToUserProfile(Map<String, dynamic> userMap) {
-    Navigator.pop(context); // Close bottom sheet
+    Navigator.pop(context);
 
     final loggedInUser = context.read<AuthProvider>().currentUserData;
     final loggedInUid = loggedInUser?['firebase_uid'];
@@ -997,13 +1145,25 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
     final isMe = userMap['username'] == loggedInUser?['username'] ||
         userMap['id']?.toString() == loggedInUser?['id']?.toString();
 
+    final username = _firstNonEmpty([
+      userMap['username'],
+    ]);
+
+    final nickname = _firstNonEmpty([
+      userMap['nickname'],
+      userMap['username'],
+    ]);
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ProfileScreen(
-          currentUsername: userMap['username'] ?? '',
-          currentNickname: userMap['nickname'] ?? userMap['username'] ?? '',
-          viewingUserId: isMe ? loggedInUid : userMap['id']?.toString() ?? userMap['firebase_uid']?.toString(),
+          currentUsername: username,
+          currentNickname: nickname,
+          viewingUserId: isMe
+              ? loggedInUid
+              : userMap['id']?.toString() ??
+              userMap['firebase_uid']?.toString(),
         ),
       ),
     );
@@ -1015,11 +1175,12 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
       height: MediaQuery.of(context).size.height * 0.75,
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(20),
+        ),
       ),
       child: Column(
         children: [
-          // Drag handle
           const SizedBox(height: 12),
           Center(
             child: Container(
@@ -1032,8 +1193,6 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
             ),
           ),
           const SizedBox(height: 8),
-
-          // TabBar
           TabBar(
             controller: _tabController,
             indicatorColor: AppColors.textPrimary,
@@ -1054,15 +1213,24 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
               Tab(text: 'Đang theo dõi'),
             ],
           ),
-          Container(height: 0.5, color: AppColors.border),
-
-          // TabBarView
+          Container(
+            height: 0.5,
+            color: AppColors.border,
+          ),
           Expanded(
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildUserList(_followers, _isLoadingFollowers, 'Chưa có người theo dõi nào'),
-                _buildUserList(_following, _isLoadingFollowing, 'Chưa theo dõi ai'),
+                _buildUserList(
+                  _followers,
+                  _isLoadingFollowers,
+                  'Chưa có người theo dõi nào',
+                ),
+                _buildUserList(
+                  _following,
+                  _isLoadingFollowing,
+                  'Chưa theo dõi ai',
+                ),
               ],
             ),
           ),
@@ -1071,10 +1239,17 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
     );
   }
 
-  Widget _buildUserList(List<Map<String, dynamic>> users, bool isLoading, String emptyMessage) {
+  Widget _buildUserList(
+      List<Map<String, dynamic>> users,
+      bool isLoading,
+      String emptyMessage,
+      ) {
     if (isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
+        child: CircularProgressIndicator(
+          color: Colors.black,
+          strokeWidth: 2,
+        ),
       );
     }
 
@@ -1083,7 +1258,11 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.people_outline_rounded, size: 48, color: AppColors.textTertiary),
+            const Icon(
+              Icons.people_outline_rounded,
+              size: 48,
+              color: AppColors.textTertiary,
+            ),
             const SizedBox(height: 12),
             Text(
               emptyMessage,
@@ -1103,8 +1282,18 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
       itemCount: users.length,
       itemBuilder: (context, index) {
         final u = users[index];
-        final username = u['username'] ?? 'user';
-        final nickname = u['nickname'] ?? username;
+
+        final username = _firstNonEmpty([
+          u['username'],
+        ]);
+
+        final nickname = _firstNonEmpty([
+          u['nickname'],
+          u['username'],
+        ]);
+
+        final usernameLabel = username.startsWith('@') ? username : '@$username';
+
         final avatarUrl = u['avatarUrl'] ?? u['avatar_url'];
 
         return ListTile(
@@ -1115,10 +1304,13 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: AppColors.inputFill,
-              border: Border.all(color: AppColors.border, width: 0.5),
+              border: Border.all(
+                color: AppColors.border,
+                width: 0.5,
+              ),
             ),
             child: ClipOval(
-              child: (avatarUrl != null && avatarUrl.isNotEmpty)
+              child: (avatarUrl != null && avatarUrl.toString().isNotEmpty)
                   ? Image.network(
                 avatarUrl,
                 fit: BoxFit.cover,
@@ -1128,7 +1320,7 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
             ),
           ),
           title: Text(
-            username,
+            nickname,
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
@@ -1136,7 +1328,7 @@ class _FollowersFollowingSheetState extends State<_FollowersFollowingSheet>
             ),
           ),
           subtitle: Text(
-            nickname,
+            usernameLabel,
             style: const TextStyle(
               color: AppColors.textSecondary,
               fontSize: 13,

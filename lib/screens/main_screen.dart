@@ -14,6 +14,7 @@ import 'search_screen.dart';
 import '../widgets/write_sheet.dart';
 import 'messages_screen.dart';
 import '../../providers/message_provider.dart';
+import 'settings_screen.dart';
 
 
 class MainScreen extends StatefulWidget {
@@ -62,6 +63,17 @@ class _MainScreenState extends State<MainScreen>
   void dispose() {
     _navAnimController.dispose();
     super.dispose();
+  }
+
+  void _openSettings() {
+    HapticFeedback.lightImpact();
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const SettingsScreen(),
+      ),
+    );
   }
 
   void _onTabChanged(int index) {
@@ -205,9 +217,9 @@ class _MainScreenState extends State<MainScreen>
           title: const _WorldIcon(),
           actions: [
             _AppBarIconButton(
-              icon: Icons.menu_rounded,
-              onTap: () => _showProfileMenu(context),
-              tooltip: 'Menu',
+              icon: Icons.settings_outlined,
+              onTap: _openSettings,
+              tooltip: 'Cài đặt',
             ),
             const SizedBox(width: 4),
           ],
@@ -220,25 +232,6 @@ class _MainScreenState extends State<MainScreen>
     return PreferredSize(
       preferredSize: const Size.fromHeight(0.5),
       child: Container(height: 0.5, color: AppColors.border),
-    );
-  }
-
-  void _showProfileMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _ProfileMenuSheet(
-        onLogout: () async {
-          Navigator.pop(context);
-
-          // 🧹 Dọn dẹp session của các Provider để không bị lưu data cũ
-          context.read<UserProvider>().clearData();
-          context.read<HomeProvider>().clearData();
-          context.read<MessageProvider>().clearData();
-
-          await context.read<AuthProvider>().signOut();
-        },
-      ),
     );
   }
 
@@ -400,64 +393,8 @@ class _WorldIcon extends StatelessWidget {
 
 // ─── Profile menu bottom sheet ────────────────────────────────────────────────
 
-class _ProfileMenuSheet extends StatelessWidget {
-  final VoidCallback onLogout;
-  const _ProfileMenuSheet({required this.onLogout});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 0.5),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 8),
-          Container(
-            width: 36,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.border,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 8),
-          _MenuItem(
-            icon: Icons.settings_outlined,
-            label: 'Cài đặt',
-            onTap: () => Navigator.pop(context),
-          ),
-          _MenuItem(
-            icon: Icons.bookmark_border_rounded,
-            label: 'Đã lưu',
-            onTap: () => Navigator.pop(context),
-          ),
-          _MenuItem(
-            icon: Icons.qr_code_rounded,
-            label: 'Mã QR của bạn',
-            onTap: () => Navigator.pop(context),
-          ),
-          Container(
-            height: 0.5,
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            color: AppColors.border,
-          ),
-          _MenuItem(
-            icon: Icons.logout_rounded,
-            label: 'Đăng xuất',
-            onTap: onLogout,
-            isDestructive: true,
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
-}
+
 
 class _MenuItem extends StatelessWidget {
   final IconData icon;

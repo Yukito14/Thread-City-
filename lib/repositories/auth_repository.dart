@@ -183,14 +183,20 @@ class AuthRepository {
 
   /// Quên mật khẩu
   Future<void> sendPasswordResetEmail(String email) async {
-    print('[AUTH] 📧 Gửi email khôi phục mật khẩu cho: $email');
+    print('[AUTH] 📧 Bắt đầu gửi email reset password cho: $email');
 
     try {
       await _firebaseAuth.sendPasswordResetEmail(email: email);
+
+      print('[AUTH] ✅ Firebase đã nhận yêu cầu gửi email reset password');
     } on FirebaseAuthException catch (e) {
-      print('[AUTH][SDK_ERROR] ${e.code}: ${e.message}');
-      throw Exception(e.code.toUpperCase().replaceAll('-', '_'));
+      print('[AUTH][RESET_PASSWORD_ERROR]');
+      print('code: ${e.code}');
+      print('message: ${e.message}');
+
+      throw Exception('${e.code}: ${e.message}');
     } catch (e) {
+      print('[AUTH][RESET_PASSWORD_UNKNOWN_ERROR] $e');
       throw Exception(e.toString());
     }
   }
