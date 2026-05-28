@@ -23,7 +23,7 @@ class PostMediaModel {
       postId: map['post_id'],
       mediaUrl: map['media_url'],
       mediaType: MediaType.values.firstWhere(
-        (e) => e.name == (map['media_type'] ?? 'image'),
+            (e) => e.name == (map['media_type'] ?? 'image'),
         orElse: () => MediaType.image,
       ),
       orderIndex: map['order_index'] ?? 0,
