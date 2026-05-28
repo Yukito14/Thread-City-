@@ -14,8 +14,96 @@ class MessageProvider extends ChangeNotifier {
   bool isSearching = false;
   bool isLoadingMessages = false;
   bool isSending = false;
+  bool isSocketConnected = false;
 
   String? errorMessage;
+
+  String? _currentFirebaseUid;
+  int? _activeConversationId;
+  final Set<int> _messageIds = {};
+
+  int? _toInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    return int.tryParse(value.toString());
+  }
+
+  Map<String, dynamic> _toMap(dynamic data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return {};
+  }
+
+  void connectSocket(String firebaseUid) {
+    _currentFirebaseUid = firebaseUid;
+
+    _repository.connectSocket(
+      firebaseUid: firebaseUid,
+      onReceiveMessage: _handleReceiveMessage,
+      onNewMessageNotification: _handleNewMessageNotification,
+      onSocketError: (data) {
+        errorMessage = data.toString();
+        notifyListeners();
+      },
+    );
+
+    isSocketConnected = true;
+    notifyListeners();
+  }
+
+  void _handleReceiveMessage(dynamic data) {
+    final message = _toMap(data);
+    final conversationId = _toInt(message['conversation_id']);
+
+    if (conversationId == null) return;
+
+    // Nếu đang mở đúng phòng chat thì append trực tiếp
+    if (_activeConversationId == conversationId) {
+      _addMessageIfNew(message);
+    }
+
+    // Cập nhật danh sách inbox
+    final uid = _currentFirebaseUid;
+    if (uid != null) {
+      loadConversations(uid);
+    }
+  }
+
+  void _handleNewMessageNotification(dynamic data) {
+    final uid = _currentFirebaseUid;
+    if (uid != null) {
+      loadConversations(uid);
+    }
+  }
+
+  bool _addMessageIfNew(Map<String, dynamic> message) {
+    final id = _toInt(message['id']);
+
+    if (id != null && _messageIds.contains(id)) {
+      return false;
+    }
+
+    if (id != null) {
+      _messageIds.add(id);
+    }
+
+    messages.add(message);
+    notifyListeners();
+    return true;
+  }
+
+  void joinConversation(int conversationId) {
+    _activeConversationId = conversationId;
+    _repository.joinConversation(conversationId);
+  }
+
+  void leaveConversation(int conversationId) {
+    if (_activeConversationId == conversationId) {
+      _activeConversationId = null;
+    }
+
+    _repository.leaveConversation(conversationId);
+  }
 
   Future<void> loadConversations(String firebaseUid) async {
     isLoadingConversations = true;
@@ -97,6 +185,14 @@ class MessageProvider extends ChangeNotifier {
         firebaseUid: firebaseUid,
       );
 
+      _messageIds.clear();
+      for (final message in messages) {
+        final id = _toInt(message['id']);
+        if (id != null) {
+          _messageIds.add(id);
+        }
+      }
+
       await _repository.markAsRead(
         conversationId: conversationId,
         firebaseUid: firebaseUid,
@@ -126,7 +222,11 @@ class MessageProvider extends ChangeNotifier {
         content: content,
       );
 
-      messages.add(newMessage);
+      // Backend cũng emit socket về, nên dùng hàm chống trùng
+      if (_activeConversationId == conversationId) {
+        _addMessageIfNew(newMessage);
+      }
+
       await loadConversations(firebaseUid);
     } catch (e) {
       errorMessage = e.toString();
@@ -134,5 +234,30 @@ class MessageProvider extends ChangeNotifier {
 
     isSending = false;
     notifyListeners();
+  }
+
+  void emitTyping({
+    required int conversationId,
+    required String firebaseUid,
+  }) {
+    _repository.emitTyping(
+      conversationId: conversationId,
+      firebaseUid: firebaseUid,
+    );
+  }
+
+  void emitStopTyping({
+    required int conversationId,
+    required String firebaseUid,
+  }) {
+    _repository.emitStopTyping(
+      conversationId: conversationId,
+      firebaseUid: firebaseUid,
+    );
+  }
+  @override
+  void dispose() {
+    _repository.disposeSocket();
+    super.dispose();
   }
 }

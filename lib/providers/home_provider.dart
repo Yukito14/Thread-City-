@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/post_model.dart';
-import '../data/repositories/post_repository.dart';
+import '../repositories/post_repository.dart';
 import 'auth_provider.dart';
 
 class HomeProvider extends ChangeNotifier {
@@ -16,7 +16,7 @@ class HomeProvider extends ChangeNotifier {
   String? _followingErrorMessage;
 
   HomeProvider(this._postRepository, this._authProvider) {
-    fetchFeed(); 
+    fetchFeed();
     fetchFollowingFeed();
   }
 

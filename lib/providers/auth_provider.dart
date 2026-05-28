@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../data/repositories/auth_repository.dart';
+import '../repositories/auth_repository.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthRepository _authRepository;
@@ -24,7 +24,7 @@ class AuthProvider extends ChangeNotifier {
         _firebaseAuth.authStateChanges().listen((User? user) async {
           print('[AUTH] 🔄 Trạng thái Auth thay đổi: ${user?.email ?? 'Chưa đăng nhập'}');
           _user = user;
-          
+
           if (user != null) {
             // Tự động khôi phục dữ liệu MySQL nếu đã login Firebase nhưng chưa có data local
             if (_currentUserData == null) {
@@ -49,7 +49,7 @@ class AuthProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   User? get user => _user;
   Map<String, dynamic>? get currentUserData => _currentUserData;
-  
+
   // Kiểm tra đăng nhập qua SDK HOẶC qua dữ liệu MySQL đã lưu
   bool get isAuthenticated => _user != null || _currentUserData != null;
 
@@ -138,7 +138,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       print('---------------------------------------');
       print('[AUTH] 🔑 Bắt đầu đăng nhập Firebase SDK...');
-      
+
       // BƯỚC 1: Đăng nhập Firebase SDK
       final Map<String, dynamic> result = await _authRepository.signInWithSDK(
         email: email,
@@ -150,7 +150,7 @@ class AuthProvider extends ChangeNotifier {
 
       // BƯỚC 2: Kiểm tra User trong MySQL
       final mysqlUser = await _authRepository.getUserByFirebaseUid(uid);
-      
+
       if (mysqlUser != null) {
         print('[AUTH] ✅ Đã tìm thấy user trong MySQL: ${mysqlUser['username']}');
         _currentUserData = mysqlUser;
@@ -171,7 +171,7 @@ class AuthProvider extends ChangeNotifier {
     } on Exception catch (e) {
       final errorMsg = e.toString();
       print('[AUTH] ❌ Lỗi đăng nhập: $errorMsg');
-      
+
       if (errorMsg.contains('INVALID_LOGIN_CREDENTIALS') || errorMsg.contains('INVALID_PASSWORD')) {
         _errorMessage = 'Email hoặc mật khẩu không chính xác';
       } else if (errorMsg.contains('USER_NOT_FOUND')) {

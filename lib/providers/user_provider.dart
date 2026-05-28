@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/post_model.dart';
-import '../data/repositories/post_repository.dart';
-import '../data/repositories/user_repository.dart';
+import '../repositories/post_repository.dart';
+import '../repositories/user_repository.dart';
 
 
 class UserProvider extends ChangeNotifier {
@@ -39,7 +39,7 @@ class UserProvider extends ChangeNotifier {
       // Gọi song song hoặc tuần tự để lấy thông tin Profile và Bài viết riêng biệt
       final userResult = await _userRepository.getUserProfile(firebaseUid);
       final postsResult = await _postRepository.getPostsByUserUid(firebaseUid, viewerUid: viewerUid);
-      
+
       _userData = userResult;
       _userPosts = postsResult;
     } catch (e) {
@@ -107,7 +107,7 @@ class UserProvider extends ChangeNotifier {
         avatarUrl: avatarUrl,
         nickname: nickname,
       );
-      
+
       // Sau khi update thành công, tải lại profile để cập nhật UI
       await fetchProfile(firebaseUid, viewerUid: firebaseUid);
       return true;
@@ -141,7 +141,7 @@ class UserProvider extends ChangeNotifier {
           .child('$firebaseUid.jpg');
 
       final uploadTask = storageRef.putFile(File(image.path));
-      
+
       // Chờ quá trình upload hoàn tất trực tiếp và an toàn
       final snapshot = await uploadTask;
       final downloadUrl = await snapshot.ref.getDownloadURL();
