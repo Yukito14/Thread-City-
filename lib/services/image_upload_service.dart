@@ -43,7 +43,7 @@ class ImageUploadService {
     try {
       // Tạo tên file độc nhất bằng timestamp + tên file gốc để không bị đè dữ liệu
       final String fileName = '${DateTime.now().millisecondsSinceEpoch}_${imageFile.path.split('/').last}';
-      
+
       final storageRef = FirebaseStorage.instance
           .ref()
           .child('posts')
@@ -52,7 +52,7 @@ class ImageUploadService {
       // Thực hiện upload trực tiếp bằng putFile
       final uploadTask = storageRef.putFile(imageFile);
       final snapshot = await uploadTask;
-      
+
       // Lấy link tải xuống trực tiếp từ Firebase Storage
       final downloadUrl = await snapshot.ref.getDownloadURL();
       print('[STORAGE] 🎉 Tải ảnh Post Media lên Firebase Storage thành công: $downloadUrl');
