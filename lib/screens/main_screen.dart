@@ -6,12 +6,12 @@ import '../../providers/home_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/app_logo.dart';
-import '../../widgets/video_player_widget.dart';
+import '../widgets/video_player_widget.dart';
 import 'activity_screen.dart';
 import 'home_screen.dart';
 import 'profile_screen.dart';
 import 'search_screen.dart';
-import '../../widgets/write_sheet.dart';
+import '../widgets/write_sheet.dart';
 import 'messages_screen.dart';
 import '../../providers/message_provider.dart';
 
