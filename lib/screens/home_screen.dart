@@ -278,24 +278,24 @@ class _FeedView extends StatelessWidget {
               if (index == 0) {
                 return const _TopComposeBar();
               }
-              
+
               if (isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.only(top: 80),
                   child: isFollowing
                       ? const _EmptyState(
-                          icon: Icons.person_add_outlined,
-                          title: 'Chưa có bài viết',
-                          subtitle: 'Theo dõi mọi người để xem bài viết của họ tại đây',
-                        )
+                    icon: Icons.person_add_outlined,
+                    title: 'Chưa có bài viết',
+                    subtitle: 'Theo dõi mọi người để xem bài viết của họ tại đây',
+                  )
                       : const _EmptyState(
-                          icon: Icons.chat_bubble_outline_rounded,
-                          title: 'Chưa có gì ở đây',
-                          subtitle: 'Hãy khám phá và theo dõi những người thú vị',
-                        ),
+                    icon: Icons.chat_bubble_outline_rounded,
+                    title: 'Chưa có gì ở đây',
+                    subtitle: 'Hãy khám phá và theo dõi những người thú vị',
+                  ),
                 );
               }
-              
+
               return PostCard(post: posts[index - 1]);
             },
           ),
@@ -342,10 +342,10 @@ class _TopComposeBar extends StatelessWidget {
               child: ClipOval(
                 child: (avatarUrl != null && avatarUrl.isNotEmpty)
                     ? Image.network(
-                        avatarUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _buildFallback(username),
-                      )
+                  avatarUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _buildFallback(username),
+                )
                     : _buildFallback(username),
               ),
             ),

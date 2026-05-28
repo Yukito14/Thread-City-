@@ -26,7 +26,10 @@ class _MessagesScreenState extends State<MessagesScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final uid = context.read<AuthProvider>().currentUserData?['firebase_uid'];
       if (uid != null) {
-        context.read<MessageProvider>().loadConversations(uid);
+        final messageProvider = context.read<MessageProvider>();
+
+        messageProvider.connectSocket(uid);
+        messageProvider.loadConversations(uid);
       }
     });
   }
