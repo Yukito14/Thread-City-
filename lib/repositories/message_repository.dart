@@ -51,6 +51,28 @@ class MessageRepository {
     throw Exception('Không thể tìm kiếm người dùng');
   }
 
+  Future<void> saveFcmToken({
+    required String firebaseUid,
+    required String fcmToken,
+    String platform = 'android',
+  }) async {
+    final response = await http
+        .post(
+      Uri.parse('$baseUrl/messages/fcm-token'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'firebase_uid': firebaseUid,
+        'fcm_token': fcmToken,
+        'platform': platform,
+      }),
+    )
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 200) {
+      throw Exception('Không thể lưu FCM token');
+    }
+  }
+
   Future<Map<String, dynamic>> createOrGetConversation({
     required String firebaseUid,
     required int targetUserId,
@@ -141,9 +163,11 @@ class MessageRepository {
 
   void connectSocket({
     required String firebaseUid,
-    required void Function(dynamic data) onReceiveMessage,
-    required void Function(dynamic data) onNewMessageNotification,
-    required void Function(dynamic data) onSocketError,
+    required Function(dynamic) onReceiveMessage,
+    required Function(dynamic) onNewMessageNotification,
+    required Function(dynamic) onTyping,
+    required Function(dynamic) onStopTyping,
+    required Function(dynamic) onSocketError,
   }) {
     if (_socket == null) {
       _socket = IO.io(
@@ -161,6 +185,8 @@ class MessageRepository {
     // Tránh bị đăng ký listener trùng nhiều lần
     _socket!.off('receive_message');
     _socket!.off('new_message_notification');
+    _socket!.off('typing');
+    _socket!.off('stop_typing');
     _socket!.off('socket_error');
     _socket!.off('connect');
     _socket!.off('connect_error');
@@ -181,6 +207,16 @@ class MessageRepository {
     _socket!.on('new_message_notification', (data) {
       print('[SOCKET] 🔔 new_message_notification: $data');
       onNewMessageNotification(data);
+    });
+
+    _socket!.on('typing', (data) {
+      print('[SOCKET] ✍️ typing: $data');
+      onTyping(data);
+    });
+
+    _socket!.on('stop_typing', (data) {
+      print('[SOCKET] 🛑 stop_typing: $data');
+      onStopTyping(data);
     });
 
     _socket!.on('socket_error', (data) {

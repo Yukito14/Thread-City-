@@ -13,6 +13,7 @@ import 'profile_screen.dart';
 import 'search_screen.dart';
 import '../../widgets/write_sheet.dart';
 import 'messages_screen.dart';
+import '../../providers/message_provider.dart';
 
 
 class MainScreen extends StatefulWidget {
@@ -27,6 +28,7 @@ class _MainScreenState extends State<MainScreen>
   int _currentIndex = 0;
   late AnimationController _navAnimController;
   int _prevIndex = 0;
+  String? _messageInitializedUid;
 
   @override
   void initState() {
@@ -35,6 +37,25 @@ class _MainScreenState extends State<MainScreen>
       vsync: this,
       duration: const Duration(milliseconds: 150),
     )..forward();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final uid = context.watch<AuthProvider>().currentUserData?['firebase_uid'];
+
+    if (uid == null || uid == _messageInitializedUid) return;
+
+    _messageInitializedUid = uid;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final messageProvider = context.read<MessageProvider>();
+      messageProvider.connectSocket(uid);
+      messageProvider.loadConversations(uid);
+    });
   }
 
   @override
@@ -104,6 +125,7 @@ class _MainScreenState extends State<MainScreen>
           actions: [
             _AppBarIconButton(
               icon: Icons.send_outlined,
+              badgeCount: context.watch<MessageProvider>().totalUnreadCount,
               onTap: () {
                 HapticFeedback.lightImpact();
                 Navigator.push(
@@ -212,7 +234,8 @@ class _MainScreenState extends State<MainScreen>
           // 🧹 Dọn dẹp session của các Provider để không bị lưu data cũ
           context.read<UserProvider>().clearData();
           context.read<HomeProvider>().clearData();
-          
+          context.read<MessageProvider>().clearData();
+
           await context.read<AuthProvider>().signOut();
         },
       ),
@@ -281,25 +304,69 @@ class _AppBarIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final String tooltip;
+  final int badgeCount;
 
   const _AppBarIconButton({
     required this.icon,
     required this.onTap,
     required this.tooltip,
+    this.badgeCount = 0,
   });
 
   @override
   Widget build(BuildContext context) {
+    final showBadge = badgeCount > 0;
+
     return Tooltip(
       message: tooltip,
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: SizedBox(
-          width: 40,
-          height: 40,
-          child: Center(
-            child: Icon(icon, size: 22, color: AppColors.textPrimary),
+          width: 44,
+          height: 44,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Center(
+                child: Icon(
+                  icon,
+                  size: 22,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+
+              if (showBadge)
+                Positioned(
+                  right: 4,
+                  top: 5,
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      minWidth: 17,
+                      minHeight: 17,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.error,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: AppColors.surface,
+                        width: 1.5,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      badgeCount > 99 ? '99+' : badgeCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),

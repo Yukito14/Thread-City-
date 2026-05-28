@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/message_provider.dart';
 import '../../theme/app_colors.dart';
+import 'dart:async';
 
 class ChatScreen extends StatefulWidget {
   final int conversationId;
@@ -22,6 +23,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  Timer? _typingTimer;
 
   String? get _currentUid =>
       context.read<AuthProvider>().currentUserData?['firebase_uid'];
@@ -50,7 +52,17 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    final uid = _currentUid;
+
+    if (uid != null) {
+      context.read<MessageProvider>().emitStopTyping(
+        conversationId: widget.conversationId,
+        firebaseUid: uid,
+      );
+    }
+
     context.read<MessageProvider>().leaveConversation(widget.conversationId);
+    _typingTimer?.cancel();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -61,6 +73,13 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _messageController.text.trim();
 
     if (uid == null || text.isEmpty) return;
+
+    _typingTimer?.cancel();
+
+    context.read<MessageProvider>().emitStopTyping(
+      conversationId: widget.conversationId,
+      firebaseUid: uid,
+    );
 
     _messageController.clear();
 
@@ -73,12 +92,41 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollToBottom();
   }
 
+  void _handleTypingChanged(String value) {
+    final uid = _currentUid;
+    if (uid == null) return;
+
+    final provider = context.read<MessageProvider>();
+
+    if (value.trim().isNotEmpty) {
+      provider.emitTyping(
+        conversationId: widget.conversationId,
+        firebaseUid: uid,
+      );
+
+      _typingTimer?.cancel();
+      _typingTimer = Timer(const Duration(milliseconds: 900), () {
+        provider.emitStopTyping(
+          conversationId: widget.conversationId,
+          firebaseUid: uid,
+        );
+      });
+    } else {
+      _typingTimer?.cancel();
+
+      provider.emitStopTyping(
+        conversationId: widget.conversationId,
+        firebaseUid: uid,
+      );
+    }
+  }
+
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 120), () {
       if (!_scrollController.hasClients) return;
 
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+        0,
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,
       );
@@ -155,12 +203,24 @@ class _ChatScreenState extends State<ChatScreen> {
                   );
                 }
 
+                final reversedMessages = provider.messages.reversed.toList();
+                final hasTyping = provider.isOtherUserTyping;
+
                 return ListView.builder(
                   controller: _scrollController,
+                  reverse: true,
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                  itemCount: provider.messages.length,
+                  itemCount: reversedMessages.length + (hasTyping ? 1 : 0),
                   itemBuilder: (context, index) {
-                    final message = provider.messages[index];
+                    if (hasTyping && index == 0) {
+                      return const Align(
+                        alignment: Alignment.centerLeft,
+                        child: _TypingBubble(),
+                      );
+                    }
+
+                    final messageIndex = hasTyping ? index - 1 : index;
+                    final message = reversedMessages[messageIndex];
                     final sender = message['sender'] ?? {};
                     final senderUid = sender['firebase_uid'];
                     final currentUid = _currentUid;
@@ -217,6 +277,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   Expanded(
                     child: TextField(
                       controller: _messageController,
+                      onChanged: _handleTypingChanged,
                       minLines: 1,
                       maxLines: 4,
                       textInputAction: TextInputAction.newline,
@@ -304,6 +365,72 @@ class _ChatAvatar extends StatelessWidget {
           fallbackUrl,
           fit: BoxFit.cover,
         ),
+      ),
+    );
+  }
+}
+
+class _TypingBubble extends StatefulWidget {
+  const _TypingBubble();
+
+  @override
+  State<_TypingBubble> createState() => _TypingBubbleState();
+}
+
+class _TypingBubbleState extends State<_TypingBubble>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.inputFill,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(3, (index) {
+              final value = (_controller.value - index * 0.2).clamp(0.0, 1.0);
+              final opacity = value < 0.5 ? 0.35 : 1.0;
+
+              return AnimatedOpacity(
+                opacity: opacity,
+                duration: const Duration(milliseconds: 180),
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  decoration: const BoxDecoration(
+                    color: AppColors.textSecondary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              );
+            }),
+          );
+        },
       ),
     );
   }

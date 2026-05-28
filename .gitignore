@@ -89,6 +89,7 @@ secrets.json
 **/google-services.json
 **/GoogleService-Info.plist
 **/firebase_options.dart
+Backend/serviceAccountKey.json
 
 # Android security
 **/android/key.properties
