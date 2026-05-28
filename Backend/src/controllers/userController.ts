@@ -67,24 +67,64 @@ export const getUserProfile = async (req: Request, res: Response) => {
 // Cập nhật thông tin Profile
 export const updateProfile = async (req: Request, res: Response) => {
     const firebase_uid = req.params.firebase_uid as string;
-    const { bio, avatar_url, username } = req.body;
+    const { bio, avatar_url, username, nickname } = req.body;
 
     try {
+        const data: any = {};
+
+        if (bio !== undefined) {
+            data.bio = bio;
+        }
+
+        if (avatar_url !== undefined) {
+            data.avatar_url = avatar_url;
+        }
+
+        if (username !== undefined) {
+            const cleanUsername = String(username).trim();
+
+            if (cleanUsername.length < 2) {
+                return res.status(400).json({
+                    message: "Username must be at least 2 characters"
+                });
+            }
+
+            data.username = cleanUsername;
+        }
+
+        if (nickname !== undefined) {
+            const cleanNickname = String(nickname).trim();
+
+            if (cleanNickname.length < 2) {
+                return res.status(400).json({
+                    message: "Nickname must be at least 2 characters"
+                });
+            }
+
+            data.nickname = cleanNickname;
+        }
+
         const user = await prisma.user.update({
             where: { firebase_uid },
-            data: {
-                bio: bio !== undefined ? bio : undefined,
-                avatar_url: avatar_url !== undefined ? avatar_url : undefined,
-                username: username !== undefined ? username : undefined,
+            data,
+            select: {
+                id: true,
+                firebase_uid: true,
+                username: true,
+                email: true,
+                nickname: true,
+                bio: true,
+                avatar_url: true,
+                created_at: true,
+                updated_at: true,
+                is_verified: true,
+                status: true,
             }
         });
 
         return res.json({
             message: "Profile updated successfully",
-            user: {
-                ...user,
-                password_hash: undefined
-            }
+            user
         });
     } catch (error) {
         console.error('Lỗi updateProfile:', error);

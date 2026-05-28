@@ -12,6 +12,7 @@ import 'providers/home_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/post_provider.dart';
 import 'providers/search_provider.dart';
+import 'screens/nickname_setup_screen.dart';
 
 import 'routes/app_routes.dart';
 import 'config/app_config.dart';
@@ -163,6 +164,12 @@ class _AuthenticatedEntryState extends State<_AuthenticatedEntry> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
+    if (!auth.hasNickname) {
+      return const NicknameSetupScreen();
+    }
+
     return const MainScreen();
   }
 }

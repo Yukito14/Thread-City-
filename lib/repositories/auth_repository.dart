@@ -6,8 +6,8 @@ class AuthRepository {
   final String authUrl;
   FirebaseAuth get _firebaseAuth => FirebaseAuth.instance;
 
-  // API Key từ Firebase Console (Dùng cho REST API Backup)
-  static const String _firebaseApiKey = 'AIzaSyBME4T6l-Pr93AdCOaELTnIF7HmLZIq9z0';
+  static const String _firebaseApiKey =
+      'AIzaSyBME4T6l-Pr93AdCOaELTnIF7HmLZIq9z0';
 
   AuthRepository(this.authUrl);
 
@@ -17,25 +17,6 @@ class AuthRepository {
     required String password,
   }) async {
     print('[AUTH] 🚀 Bắt đầu đăng ký bằng Firebase SDK...');
-
-    /* --- BACKUP REST API (Dùng nếu SDK bị lỗi) ---
-    final url = Uri.parse('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=$_firebaseApiKey');
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-        'returnSecureToken': true,
-      }),
-    ).timeout(const Duration(seconds: 10));
-
-    final data = jsonDecode(response.body);
-    if (response.statusCode != 200) {
-      throw Exception(data['error']['message'] ?? 'Lỗi đăng ký REST');
-    }
-    return data;
-    ----------------------------------------------- */
 
     try {
       final userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
@@ -49,8 +30,10 @@ class AuthRepository {
       };
     } on FirebaseAuthException catch (e) {
       String errorCode = e.code.toUpperCase().replaceAll('-', '_');
-      // Mapping để tương thích với Provider đang dùng REST API codes
-      if (errorCode == 'EMAIL_ALREADY_IN_USE') errorCode = 'EMAIL_EXISTS';
+
+      if (errorCode == 'EMAIL_ALREADY_IN_USE') {
+        errorCode = 'EMAIL_EXISTS';
+      }
 
       print('[AUTH][SDK_ERROR] $errorCode: ${e.message}');
       throw Exception(errorCode);
@@ -67,25 +50,6 @@ class AuthRepository {
   }) async {
     print('[AUTH] 🔑 Bắt đầu đăng nhập bằng Firebase SDK...');
 
-    /* --- BACKUP REST API (Dùng nếu SDK bị lỗi) ---
-    final url = Uri.parse('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$_firebaseApiKey');
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-        'returnSecureToken': true,
-      }),
-    ).timeout(const Duration(seconds: 10));
-
-    final data = jsonDecode(response.body);
-    if (response.statusCode != 200) {
-      throw Exception(data['error']['message'] ?? 'Lỗi đăng nhập REST');
-    }
-    return data;
-    ----------------------------------------------- */
-
     try {
       final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
         email: email,
@@ -98,9 +62,14 @@ class AuthRepository {
       };
     } on FirebaseAuthException catch (e) {
       String errorCode = e.code.toUpperCase().replaceAll('-', '_');
-      // Mapping để tương thích với Provider
-      if (errorCode == 'USER_NOT_FOUND') errorCode = 'EMAIL_NOT_FOUND';
-      if (errorCode == 'WRONG_PASSWORD') errorCode = 'INVALID_PASSWORD';
+
+      if (errorCode == 'USER_NOT_FOUND') {
+        errorCode = 'EMAIL_NOT_FOUND';
+      }
+
+      if (errorCode == 'WRONG_PASSWORD') {
+        errorCode = 'INVALID_PASSWORD';
+      }
 
       print('[AUTH][SDK_ERROR] $errorCode: ${e.message}');
       throw Exception(errorCode);
@@ -110,41 +79,18 @@ class AuthRepository {
     }
   }
 
-  /* --- BACKUP REST API (Dùng nếu SDK bị lỗi Timeout trên Android 15) ---
-  Future<Map<String, dynamic>> registerWithFirebaseREST({
-    required String email,
-    required String password,
-  }) async {
-    final url = Uri.parse('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=$_firebaseApiKey');
-    final response = await http.post(url, headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password, 'returnSecureToken': true}),
-    );
-    return jsonDecode(response.body);
-  }
-
-  Future<Map<String, dynamic>> loginWithFirebaseREST({
-    required String email,
-    required String password,
-  }) async {
-    final url = Uri.parse('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$_firebaseApiKey');
-    final response = await http.post(url, headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password, 'returnSecureToken': true}),
-    );
-    return jsonDecode(response.body);
-  }
-  --- */
-
   /// Lấy thông tin user từ MySQL theo firebase_uid
   Future<Map<String, dynamic>?> getUserByFirebaseUid(String uid) async {
     try {
       final response = await http.get(
         Uri.parse('$authUrl/by-uid/$uid'),
         headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 10)); // Thêm timeout
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
+
       return null;
     } catch (e) {
       print('[AUTH] ⚠️ Lỗi kết nối MySQL: $e');
@@ -152,12 +98,14 @@ class AuthRepository {
     }
   }
 
+  /// Đăng ký user vào MySQL
   Future<void> registerUserToMySQL({
     required String uid,
     required String email,
     required String username,
   }) async {
     final url = Uri.parse('$authUrl/register');
+
     print('[AUTH] 🌐 Đang gọi API MySQL: $url');
     print('[AUTH] 📦 Body: ${{
       'firebase_uid': uid,
@@ -180,11 +128,49 @@ class AuthRepository {
 
       if (response.statusCode != 201) {
         final errorData = jsonDecode(response.body);
+
         print('[AUTH] ❌ Lỗi MySQL: ${errorData['message']}');
+
         throw Exception(errorData['message'] ?? 'Lỗi đăng ký server');
       }
     } catch (e) {
       print('[AUTH] 🚨 Lỗi kết nối/timeout MySQL: $e');
+      rethrow;
+    }
+  }
+
+  /// Cập nhật nickname cho user
+  Future<Map<String, dynamic>> updateNickname({
+    required String firebaseUid,
+    required String nickname,
+  }) async {
+    final baseUrl = authUrl.replaceFirst(RegExp(r'/auth/?$'), '');
+    final url = Uri.parse('$baseUrl/users/$firebaseUid');
+
+    print('[AUTH] ✏️ Đang cập nhật nickname: $url');
+    print('[AUTH] 📦 Nickname: $nickname');
+
+    try {
+      final response = await http.patch(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'nickname': nickname,
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      print('[AUTH] 📥 Update nickname status: ${response.statusCode}');
+      print('[AUTH] 📥 Update nickname response: $data');
+
+      if (response.statusCode != 200) {
+        throw Exception(data['message'] ?? 'Cập nhật biệt danh thất bại');
+      }
+
+      return data['user'];
+    } catch (e) {
+      print('[AUTH] ❌ Lỗi updateNickname: $e');
       rethrow;
     }
   }
@@ -198,6 +184,7 @@ class AuthRepository {
   /// Quên mật khẩu
   Future<void> sendPasswordResetEmail(String email) async {
     print('[AUTH] 📧 Gửi email khôi phục mật khẩu cho: $email');
+
     try {
       await _firebaseAuth.sendPasswordResetEmail(email: email);
     } on FirebaseAuthException catch (e) {

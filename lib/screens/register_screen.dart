@@ -38,11 +38,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Đăng ký thành công!'),
+          content: Text('Đăng ký thành công! Hãy đặt biệt danh của bạn'),
           backgroundColor: AppColors.success,
         ),
       );
-      Navigator.pushReplacementNamed(context, AppRoutes.home);
+
+      Navigator.pushReplacementNamed(context, AppRoutes.nicknameSetup);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

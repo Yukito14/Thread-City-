@@ -5,6 +5,7 @@ import '../routes/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -33,7 +34,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (success && mounted) {
-      Navigator.pushReplacementNamed(context, AppRoutes.home);
+      Navigator.pushReplacementNamed(
+        context,
+        authProvider.hasNickname ? AppRoutes.home : AppRoutes.nicknameSetup,
+      );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

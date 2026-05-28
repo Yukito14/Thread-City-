@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import '../repositories/auth_repository.dart';
+import '../models/user_model.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthRepository _authRepository;
@@ -13,22 +15,21 @@ class AuthProvider extends ChangeNotifier {
   String? _errorMessage;
 
   AuthProvider(this._authRepository) {
-    // Chúng ta sẽ không gọi Firebase ngay trong constructor để tránh treo App lúc khởi động
     _initAuthListener();
   }
 
   void _initAuthListener() {
-    // Đợi 1 chút cho Firebase khởi tạo xong rồi mới lắng nghe
     Future.delayed(const Duration(seconds: 1), () {
       try {
         _firebaseAuth.authStateChanges().listen((User? user) async {
           print('[AUTH] 🔄 Trạng thái Auth thay đổi: ${user?.email ?? 'Chưa đăng nhập'}');
+
           _user = user;
 
           if (user != null) {
-            // Tự động khôi phục dữ liệu MySQL nếu đã login Firebase nhưng chưa có data local
             if (_currentUserData == null) {
               final mysqlUser = await _authRepository.getUserByFirebaseUid(user.uid);
+
               if (mysqlUser != null) {
                 print('[AUTH] ✅ Đã tự động khôi phục dữ liệu MySQL cho: ${mysqlUser['username']}');
                 _currentUserData = mysqlUser;
@@ -37,6 +38,7 @@ class AuthProvider extends ChangeNotifier {
           } else {
             _currentUserData = null;
           }
+
           notifyListeners();
         });
       } catch (e) {
@@ -50,7 +52,16 @@ class AuthProvider extends ChangeNotifier {
   User? get user => _user;
   Map<String, dynamic>? get currentUserData => _currentUserData;
 
-  // Kiểm tra đăng nhập qua SDK HOẶC qua dữ liệu MySQL đã lưu
+  UserModel? get currentUser {
+    if (_currentUserData == null) return null;
+    return UserModel.fromMap(_currentUserData!);
+  }
+
+  bool get hasNickname {
+    final nickname = _currentUserData?['nickname'];
+    return nickname != null && nickname.toString().trim().isNotEmpty;
+  }
+
   bool get isAuthenticated => _user != null || _currentUserData != null;
 
   Future<bool> signUp({
@@ -75,7 +86,6 @@ class AuthProvider extends ChangeNotifier {
       print('[AUTH] 📧 Email: $email');
       print('[AUTH] ⏰ Time: ${DateTime.now()}');
 
-      // BƯỚC 1: Đăng ký qua Firebase SDK
       final Map<String, dynamic> result = await _authRepository.signUpWithSDK(
         email: email,
         password: password,
@@ -96,6 +106,7 @@ class AuthProvider extends ChangeNotifier {
         'firebase_uid': uid,
         'email': email,
         'username': username,
+        'nickname': null,
       };
 
       print('[AUTH] 🎉 Đăng ký hoàn tất!');
@@ -103,9 +114,9 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return true;
-
     } on Exception catch (e, stackTrace) {
       final errorMsg = e.toString();
+
       print('=================================');
       print('[AUTH][ERROR] $errorMsg');
       print('[AUTH] StackTrace: $stackTrace');
@@ -114,17 +125,47 @@ class AuthProvider extends ChangeNotifier {
       if (errorMsg.contains('EMAIL_EXISTS')) {
         _errorMessage = 'Email này đã được sử dụng rồi!';
       } else if (errorMsg.contains('WEAK_PASSWORD')) {
-        _errorMessage = 'Mật khẩu quá yếu (cần ít nhất 6 ký tự)!';
+        _errorMessage = 'Mật khẩu quá yếu, cần ít nhất 6 ký tự!';
       } else if (errorMsg.contains('INVALID_EMAIL')) {
         _errorMessage = 'Địa chỉ email không hợp lệ!';
       } else {
         _errorMessage = 'Lỗi: $errorMsg';
       }
-    }
 
-    _isLoading = false;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateNickname(String nickname) async {
+    _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
-    return false;
+
+    try {
+      final firebaseUid = _currentUserData?['firebase_uid'] ?? _user?.uid;
+
+      if (firebaseUid == null || firebaseUid.toString().isEmpty) {
+        _errorMessage = 'Không tìm thấy người dùng hiện tại';
+        return false;
+      }
+
+      final updatedUser = await _authRepository.updateNickname(
+        firebaseUid: firebaseUid.toString(),
+        nickname: nickname,
+      );
+
+      _currentUserData = updatedUser;
+
+      return true;
+    } catch (e) {
+      _errorMessage = 'Lỗi cập nhật biệt danh: $e';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<bool> signIn({
@@ -139,57 +180,59 @@ class AuthProvider extends ChangeNotifier {
       print('---------------------------------------');
       print('[AUTH] 🔑 Bắt đầu đăng nhập Firebase SDK...');
 
-      // BƯỚC 1: Đăng nhập Firebase SDK
       final Map<String, dynamic> result = await _authRepository.signInWithSDK(
         email: email,
         password: password,
       );
 
       final String uid = result['localId'];
+
       print('[AUTH] ✅ Firebase Login thành công. UID: $uid');
 
-      // BƯỚC 2: Kiểm tra User trong MySQL
       final mysqlUser = await _authRepository.getUserByFirebaseUid(uid);
 
       if (mysqlUser != null) {
         print('[AUTH] ✅ Đã tìm thấy user trong MySQL: ${mysqlUser['username']}');
         _currentUserData = mysqlUser;
       } else {
-        print('[AUTH] ⚠️ Không tìm thấy user trong MySQL (Có thể chưa đồng bộ)');
-        // Nếu không có trong MySQL, tạo một object cơ bản để app không crash
+        print('[AUTH] ⚠️ Không tìm thấy user trong MySQL');
         _currentUserData = {
           'firebase_uid': uid,
           'email': email,
           'username': 'User_$uid',
+          'nickname': null,
         };
       }
 
       _isLoading = false;
       notifyListeners();
       return true;
-
     } on Exception catch (e) {
       final errorMsg = e.toString();
+
       print('[AUTH] ❌ Lỗi đăng nhập: $errorMsg');
 
-      if (errorMsg.contains('INVALID_LOGIN_CREDENTIALS') || errorMsg.contains('INVALID_PASSWORD')) {
+      if (errorMsg.contains('INVALID_LOGIN_CREDENTIALS') ||
+          errorMsg.contains('INVALID_PASSWORD')) {
         _errorMessage = 'Email hoặc mật khẩu không chính xác';
       } else if (errorMsg.contains('USER_NOT_FOUND')) {
         _errorMessage = 'Tài khoản không tồn tại';
       } else {
         _errorMessage = 'Lỗi: $errorMsg';
       }
-    }
 
-    _isLoading = false;
-    notifyListeners();
-    return false;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   Future<void> signOut() async {
     await _authRepository.signOut();
+
     _user = null;
     _currentUserData = null;
+
     notifyListeners();
   }
 
@@ -197,13 +240,16 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
+
     try {
       await _authRepository.sendPasswordResetEmail(email);
+
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
       _errorMessage = 'Lỗi: $e';
+
       _isLoading = false;
       notifyListeners();
       return false;
