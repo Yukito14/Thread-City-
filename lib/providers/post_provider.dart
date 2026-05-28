@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/post_model.dart';
-import '../data/repositories/post_repository.dart';
+import '../repositories/post_repository.dart';
 import 'auth_provider.dart';
 
 class PostProvider extends ChangeNotifier {

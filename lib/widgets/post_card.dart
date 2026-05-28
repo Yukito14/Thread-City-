@@ -414,6 +414,7 @@ class _PostCardState extends State<PostCard> {
                     const SizedBox(height: 12),
 
                     // Action Buttons
+                    // Action Buttons
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -423,17 +424,36 @@ class _PostCardState extends State<PostCard> {
                           text: FormatUtils.formatCount(likeCount),
                           onTap: handleLike,
                         ),
+
                         _ActionButton(
                           icon: Icons.chat_bubble_outline,
                           text: FormatUtils.formatCount(post.commentCount),
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => PostDetailScreen(post: post)),
-                          ),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PostDetailScreen(post: post),
+                              ),
+                            );
+                          },
                         ),
-                        const _ActionButton(icon: Icons.repeat_outlined),
-                        const _ActionButton(icon: Icons.send_outlined),
+
+                        _ActionButton(
+                          icon: Icons.repeat_outlined,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            showThreadRepostSheet(context, post);
+                          },
+                        ),
+
+                        _ActionButton(
+                          icon: Icons.send_outlined,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            showThreadShareSheet(context, post);
+                          },
+                        ),
                       ],
                     ),
                   ],
@@ -585,13 +605,7 @@ class _PostCardState extends State<PostCard> {
     );
   }
 
-  String _formatDateTime(DateTime dt) {
-    final now = DateTime.now();
-    final difference = now.difference(dt);
-    if (difference.inMinutes < 60) return '${difference.inMinutes}m';
-    if (difference.inHours < 24) return '${difference.inHours}h';
-    return '${difference.inDays}d';
-  }
+
 }
 
 class _ActionButton extends StatefulWidget {

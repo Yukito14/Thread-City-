@@ -12,6 +12,7 @@ import 'home_screen.dart';
 import 'profile_screen.dart';
 import 'search_screen.dart';
 import '../../widgets/write_sheet.dart';
+import 'messages_screen.dart';
 
 
 class MainScreen extends StatefulWidget {
@@ -103,7 +104,15 @@ class _MainScreenState extends State<MainScreen>
           actions: [
             _AppBarIconButton(
               icon: Icons.send_outlined,
-              onTap: () {},
+              onTap: () {
+                HapticFeedback.lightImpact();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MessagesScreen(),
+                  ),
+                );
+              },
               tooltip: 'Tin nhắn',
             ),
             const SizedBox(width: 4),

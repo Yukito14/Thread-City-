@@ -6,8 +6,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/post_model.dart';
-import '../data/repositories/post_repository.dart';
-import '../data/repositories/user_repository.dart';
+import '../repositories/post_repository.dart';
+import '../repositories/user_repository.dart';
 
 class ProfileProvider extends ChangeNotifier {
   final IUserRepository _userRepository;

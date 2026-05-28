@@ -79,8 +79,8 @@
 **/.env.production.local
 
 # Prisma related
-**/server/prisma/dev.db
-**/server/prisma/dev.db-journal
+Backend/prisma/dev.db
+Backend/prisma/dev.db-journal
 
 # ImgBB or other API secrets
 secrets.json

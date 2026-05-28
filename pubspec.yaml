@@ -41,7 +41,10 @@ dependencies:
   firebase_auth: ^5.1.2
   firebase_storage: ^12.1.2
   image_picker: ^1.1.2
-  video_player: ^2.11.1
+  video_player: ^2.9.5
+  share_plus: ^13.1.0
+  url_launcher: ^6.3.2
+  socket_io_client: ^3.1.4
 
 
 dev_dependencies:
