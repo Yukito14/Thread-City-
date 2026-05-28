@@ -6,9 +6,12 @@ import {
   sendMessage,
   markConversationAsRead,
   searchUsersForMessage,
+  saveFcmToken,
 } from "../controllers/messageController.js";
 
 const router = Router();
+
+router.post("/fcm-token", saveFcmToken);
 
 router.get("/users/search", searchUsersForMessage);
 

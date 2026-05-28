@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { emitNewMessage } from "../socket.js";
+import { messaging } from "../services/firebaseService.js";
 
 const prisma = new PrismaClient();
 
@@ -253,6 +254,51 @@ export const sendMessage = async (req: Request, res: Response) => {
 
     await emitNewMessage(conversationId, message);
 
+    const receiverId =
+      conversation.user1_id === sender.id
+        ? conversation.user2_id
+        : conversation.user1_id;
+
+    const receiverDevices = await prisma.userDevice.findMany({
+      where: {
+        user_id: receiverId,
+      },
+      select: {
+        fcm_token: true,
+      },
+    });
+
+    const tokens = receiverDevices
+      .map((device) => device.fcm_token)
+      .filter(Boolean);
+
+    if (tokens.length > 0) {
+      try {
+        await messaging.sendEachForMulticast({
+          tokens,
+          notification: {
+            title: sender.nickname || sender.username,
+            body: content.trim(),
+          },
+          data: {
+            type: "chat",
+            conversation_id: String(conversationId),
+            sender_id: String(sender.id),
+            sender_username: sender.username,
+          },
+          android: {
+            priority: "high",
+            notification: {
+              channelId: "chat_messages",
+              sound: "default",
+            },
+          },
+        });
+      } catch (pushError) {
+        console.error("Lỗi gửi FCM notification:", pushError);
+      }
+    }
+
     return res.status(201).json(message);
   } catch (error) {
     console.error("Lỗi sendMessage:", error);
@@ -336,6 +382,49 @@ export const searchUsersForMessage = async (req: Request, res: Response) => {
     return res.json(users);
   } catch (error) {
     console.error("Lỗi searchUsersForMessage:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const saveFcmToken = async (req: Request, res: Response) => {
+  const { firebase_uid, fcm_token, platform } = req.body;
+
+  if (!firebase_uid || !fcm_token) {
+    return res.status(400).json({
+      message: "firebase_uid and fcm_token are required",
+    });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { firebase_uid },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const device = await prisma.userDevice.upsert({
+      where: {
+        fcm_token,
+      },
+      update: {
+        user_id: user.id,
+        platform: platform || "android",
+      },
+      create: {
+        user_id: user.id,
+        fcm_token,
+        platform: platform || "android",
+      },
+    });
+
+    return res.json({
+      message: "FCM token saved",
+      device,
+    });
+  } catch (error) {
+    console.error("Lỗi saveFcmToken:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

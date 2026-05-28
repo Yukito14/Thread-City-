@@ -10,11 +10,22 @@ class MessageProvider extends ChangeNotifier {
   List<Map<String, dynamic>> searchResults = [];
   List<Map<String, dynamic>> messages = [];
 
+  int get totalUnreadCount {
+    int total = 0;
+
+    for (final conversation in conversations) {
+      total += _toInt(conversation['unread_count']) ?? 0;
+    }
+
+    return total;
+  }
+
   bool isLoadingConversations = false;
   bool isSearching = false;
   bool isLoadingMessages = false;
   bool isSending = false;
   bool isSocketConnected = false;
+  bool isOtherUserTyping = false;
 
   String? errorMessage;
 
@@ -41,6 +52,8 @@ class MessageProvider extends ChangeNotifier {
       firebaseUid: firebaseUid,
       onReceiveMessage: _handleReceiveMessage,
       onNewMessageNotification: _handleNewMessageNotification,
+      onTyping: _handleTyping,
+      onStopTyping: _handleStopTyping,
       onSocketError: (data) {
         errorMessage = data.toString();
         notifyListeners();
@@ -57,13 +70,27 @@ class MessageProvider extends ChangeNotifier {
 
     if (conversationId == null) return;
 
-    // Nếu đang mở đúng phòng chat thì append trực tiếp
+    final uid = _currentFirebaseUid;
+
     if (_activeConversationId == conversationId) {
       _addMessageIfNew(message);
+
+      if (uid != null) {
+        _repository
+            .markAsRead(
+          conversationId: conversationId,
+          firebaseUid: uid,
+        )
+            .then((_) {
+          _setConversationUnreadCount(conversationId, 0);
+          notifyListeners();
+          loadConversations(uid);
+        });
+      }
+
+      return;
     }
 
-    // Cập nhật danh sách inbox
-    final uid = _currentFirebaseUid;
     if (uid != null) {
       loadConversations(uid);
     }
@@ -73,6 +100,40 @@ class MessageProvider extends ChangeNotifier {
     final uid = _currentFirebaseUid;
     if (uid != null) {
       loadConversations(uid);
+    }
+  }
+
+  void _handleTyping(dynamic data) {
+    final typingData = _toMap(data);
+
+    final conversationId = _toInt(typingData['conversation_id']);
+    final typingUid = typingData['firebase_uid'];
+
+    if (conversationId == null) return;
+
+    final isCurrentConversation = _activeConversationId == conversationId;
+    final isOtherUser = typingUid != _currentFirebaseUid;
+
+    if (isCurrentConversation && isOtherUser) {
+      isOtherUserTyping = true;
+      notifyListeners();
+    }
+  }
+
+  void _handleStopTyping(dynamic data) {
+    final typingData = _toMap(data);
+
+    final conversationId = _toInt(typingData['conversation_id']);
+    final typingUid = typingData['firebase_uid'];
+
+    if (conversationId == null) return;
+
+    final isCurrentConversation = _activeConversationId == conversationId;
+    final isOtherUser = typingUid != _currentFirebaseUid;
+
+    if (isCurrentConversation && isOtherUser) {
+      isOtherUserTyping = false;
+      notifyListeners();
     }
   }
 
@@ -92,17 +153,35 @@ class MessageProvider extends ChangeNotifier {
     return true;
   }
 
+  void _setConversationUnreadCount(int conversationId, int count) {
+    conversations = conversations.map((conversation) {
+      final id = _toInt(conversation['id']);
+
+      if (id == conversationId) {
+        final updated = Map<String, dynamic>.from(conversation);
+        updated['unread_count'] = count;
+        return updated;
+      }
+
+      return conversation;
+    }).toList();
+  }
+
   void joinConversation(int conversationId) {
     _activeConversationId = conversationId;
+    isOtherUserTyping = false;
     _repository.joinConversation(conversationId);
+    notifyListeners();
   }
 
   void leaveConversation(int conversationId) {
     if (_activeConversationId == conversationId) {
       _activeConversationId = null;
+      isOtherUserTyping = false;
     }
 
     _repository.leaveConversation(conversationId);
+    notifyListeners();
   }
 
   Future<void> loadConversations(String firebaseUid) async {
@@ -177,6 +256,7 @@ class MessageProvider extends ChangeNotifier {
   }) async {
     isLoadingMessages = true;
     errorMessage = null;
+    isOtherUserTyping = false;
     notifyListeners();
 
     try {
@@ -186,6 +266,7 @@ class MessageProvider extends ChangeNotifier {
       );
 
       _messageIds.clear();
+
       for (final message in messages) {
         final id = _toInt(message['id']);
         if (id != null) {
@@ -197,6 +278,8 @@ class MessageProvider extends ChangeNotifier {
         conversationId: conversationId,
         firebaseUid: firebaseUid,
       );
+
+      _setConversationUnreadCount(conversationId, 0);
     } catch (e) {
       errorMessage = e.toString();
     }
@@ -213,16 +296,21 @@ class MessageProvider extends ChangeNotifier {
     if (content.trim().isEmpty) return;
 
     isSending = true;
+    errorMessage = null;
     notifyListeners();
 
     try {
+      emitStopTyping(
+        conversationId: conversationId,
+        firebaseUid: firebaseUid,
+      );
+
       final newMessage = await _repository.sendMessage(
         conversationId: conversationId,
         firebaseUid: firebaseUid,
         content: content,
       );
 
-      // Backend cũng emit socket về, nên dùng hàm chống trùng
       if (_activeConversationId == conversationId) {
         _addMessageIfNew(newMessage);
       }
@@ -230,6 +318,7 @@ class MessageProvider extends ChangeNotifier {
       await loadConversations(firebaseUid);
     } catch (e) {
       errorMessage = e.toString();
+      notifyListeners();
     }
 
     isSending = false;
@@ -254,6 +343,28 @@ class MessageProvider extends ChangeNotifier {
       conversationId: conversationId,
       firebaseUid: firebaseUid,
     );
+  }
+
+  void clearData() {
+    conversations = [];
+    searchResults = [];
+    messages = [];
+
+    isLoadingConversations = false;
+    isSearching = false;
+    isLoadingMessages = false;
+    isSending = false;
+    isSocketConnected = false;
+    isOtherUserTyping = false;
+
+    errorMessage = null;
+    _currentFirebaseUid = null;
+    _activeConversationId = null;
+    _messageIds.clear();
+
+    _repository.disposeSocket();
+
+    notifyListeners();
   }
 
   @override

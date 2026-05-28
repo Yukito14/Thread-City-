@@ -24,6 +24,18 @@ import 'repositories/notification_repository.dart';
 import 'providers/activity_provider.dart';
 import 'repositories/message_repository.dart';
 import 'providers/message_provider.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
+import 'services/push_notification_service.dart';
+
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  print('[FCM] 📩 Background message: ${message.messageId}');
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +43,8 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   print('✅ [FIREBASE] Core ready');
 
@@ -102,9 +116,53 @@ class MyApp extends StatelessWidget {
           title: 'Threads Clone',
           theme: AppTheme.lightTheme,
           onGenerateRoute: AppRoutes.onGenerateRoute,
-          home: auth.isAuthenticated ? MainScreen() : LoginScreen(),
+          home: auth.isAuthenticated
+              ? const _AuthenticatedEntry()
+              : LoginScreen(),
         );
       },
     );
+  }
+}
+
+class _AuthenticatedEntry extends StatefulWidget {
+  const _AuthenticatedEntry();
+
+  @override
+  State<_AuthenticatedEntry> createState() => _AuthenticatedEntryState();
+}
+
+class _AuthenticatedEntryState extends State<_AuthenticatedEntry> {
+  String? _initializedUid;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final auth = context.watch<AuthProvider>();
+    final uid = auth.currentUserData?['firebase_uid'];
+
+    if (uid == null || uid == _initializedUid) return;
+
+    _initializedUid = uid;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      final messageRepository = context.read<MessageRepository>();
+
+      try {
+        await PushNotificationService(messageRepository).init(
+          firebaseUid: uid,
+        );
+      } catch (e) {
+        print('[FCM] ❌ Init error: $e');
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const MainScreen();
   }
 }
